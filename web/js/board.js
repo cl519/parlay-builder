@@ -34,12 +34,6 @@ function fillLog(el) {
   el.querySelector(".plog").innerHTML = logTableHTML(logs[el.dataset.log], true);
 }
 
-// The photo is as tall as the name + box score beside it (CSS stretch); this keeps it ESPN's
-// shape (48:35) as that height changes with the number of games.
-const fitPhotos = new ResizeObserver((entries) => {
-  for (const { target } of entries) target.previousElementSibling.style.width = Math.round((target.offsetHeight * 48) / 35) + "px";
-});
-
 const loader = new IntersectionObserver((entries) => {
   for (const { target, isIntersecting } of entries) {
     if (!isIntersecting) continue;
@@ -170,8 +164,6 @@ export function renderBoard() {
   renderedSig = structureSig();
   loader.disconnect();
   document.querySelectorAll(".player[data-log]").forEach((el) => logs[el.dataset.log] || loader.observe(el));
-  fitPhotos.disconnect();
-  document.querySelectorAll(".pinfo").forEach((el) => fitPhotos.observe(el));
 }
 
 function setHTML(el, html) {

@@ -10,7 +10,10 @@ const LEGEND_TEXT = '<div class="tt">Thin market</div>Few trades on this line, s
 const TARGETS = ".chip[data-t], #legend, .pname[data-team]";
 // Columns of the game log: a stat, or [made, tried] shown as "5/12"
 const LOG_STATS = ["MIN", "PTS", "REB", "AST", ["FG", "FGM", "FGA"], ["3PT", "3PM", "3PA"], "STL", "BLK"];
-// Made and tried are separate cells, so the slashes line up down the column
+// Fixed column widths, everything centered: even spacing, and since made and tried are separate
+// cells of equal width, each slash sits exactly under the middle of its "FG" / "3PT" header.
+const COL = { date: 40, opp: 72, stat: 40, half: 34 };  // half: fits "12.5"
+const BOARD_ROWS = 5;  // on Build, always 5 game rows (blank if fewer), so every player is the same height
 const headCell = (s) => (Array.isArray(s) ? `<th colspan="2" class="fr">${s[0]}</th>` : `<th>${s}</th>`);
 const statCells = (row, fmt) => LOG_STATS.map((s) => (Array.isArray(s)
   ? `<td class="fm">${esc(fmt(row[s[1]]))}</td><td class="fa">/${esc(fmt(row[s[2]]))}</td>`
@@ -70,13 +73,19 @@ export function logTableHTML(log, compact = false) {
   if (log.missing) return `<div class="muted">Not found on ESPN's roster.</div>`;
   if (!log.played) return `<div class="muted">No regular-season games yet.</div>`;
   const day = (iso) => new Date(iso).toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
-  const rows = log.games.map((g) => `<tr>${compact ? "" : `<td class="d">${day(g.date)}</td>`}`
+  let rows = log.games.map((g) => `<tr>${compact ? "" : `<td class="d">${day(g.date)}</td>`}`
     + `<td class="d">${g.at ? "@" : "vs"} ${esc(g.opp)} <i class="${g.result === "W" ? "w" : "l"}">${esc(g.result)}</i></td>`
     + `${statCells(g, String)}</tr>`).join("");
   const lead = compact ? 1 : 2;  // label columns before the stats
-  return `<table class="log"><tr>${"<th></th>".repeat(lead)}${LOG_STATS.map(headCell).join("")}</tr>${rows}`
+  const widths = [...(compact ? [] : [COL.date]), COL.opp,
+    ...LOG_STATS.flatMap((s) => (Array.isArray(s) ? [COL.half, COL.half] : [COL.stat]))];
+  // Season average first, under the headers; on Build, missing games leave blank rows at the bottom
+  if (compact) rows += `<tr><td colspan="${widths.length}">&nbsp;</td></tr>`.repeat(BOARD_ROWS - log.games.length);
+  const cols = widths.map((w) => `<col style="width:${w}px">`).join("");
+  return `<table class="log" style="width:${widths.reduce((a, b) => a + b)}px"><colgroup>${cols}</colgroup>`
+    + `<tr>${"<th></th>".repeat(lead)}${LOG_STATS.map(headCell).join("")}</tr>`
     + `<tr class="avg"><td colspan="${lead}">${compact ? "Avg" : `Season avg <span class="muted">(${log.played} GP)</span>`}</td>`
-    + `${statCells(log.avg, (x) => x.toFixed(1))}</tr></table>`;
+    + `${statCells(log.avg, (x) => x.toFixed(1))}</tr>${rows}</table>`;
 }
 
 const logLabel = (log) => (!log.played ? "" : log.played === 1 ? " · Only game" : log.played <= 5 ? ` · All ${log.played} games` : " · Last 5");
