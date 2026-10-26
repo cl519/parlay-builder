@@ -127,10 +127,11 @@ header {
 .player { padding: 14px 16px 10px; border-top: 1px solid var(--line); }
 .phead { display: flex; gap: 16px; margin-bottom: 12px; }
 .portrait {
-  position: relative; flex: none; align-self: stretch; aspect-ratio: 48 / 35; min-height: 100px; max-height: 150px;
+  position: relative; flex: none; align-self: stretch; width: 137px; min-height: 100px;  /* width: fitPhotos */
   border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, var(--chip-hover), var(--chip));
 }
-.portrait img { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }
+/* Absolute, so the photo's own size never sets the band's height: the name and box score do */
+.portrait img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }
 .pinfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .plog { overflow-x: auto; scrollbar-width: none; }
 .plog .log { font-size: 13px; width: 100%; max-width: 560px; }  /* spread across the band, not bunched left */

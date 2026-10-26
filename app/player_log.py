@@ -19,7 +19,7 @@ ROSTER_SECONDS = 6 * 3600
 LOG_SECONDS = 10 * 60
 RECENT = 5
 STATS = ("MIN", "FGM", "FGA", "3PM", "3PA", "PTS", "REB", "AST", "STL", "BLK")
-HEADSHOT = "https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/{}.png&w=240&h=176"  # ~35KB, sharp at 120px
+HEADSHOT = "https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/{}.png&w=400&h=292"  # ~120KB, sharp at 200px on Retina
 
 _rosters = {}  # Kalshi team code -> (fetched at, {normalized name: athlete id})
 _photos = set()  # athlete ids ESPN has a headshot for

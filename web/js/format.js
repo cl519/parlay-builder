@@ -18,8 +18,9 @@ export const logoURL = (team) =>
   `https://a.espncdn.com/combiner/i?img=/i/teamlogos/nba/500/${ESPN_CODE[team] || String(team).toLowerCase()}.png&w=64&h=64`;
 export const logoHTML = (team) => `<img class="logo" src="${esc(logoURL(team))}" ${IMG}>`;
 // The frame stays when there's no photo (showing initials), so the layout doesn't shift.
+// v: bump when the server's photo size changes (browsers keep the redirect for a day).
 export const headshotHTML = (team, name, cls = "headshot") =>
-  `<span class="${cls}" data-i="${esc(initials(name))}"><img src="/api/headshot?${esc(new URLSearchParams({ team, name }))}" `
+  `<span class="${cls}" data-i="${esc(initials(name))}"><img src="/api/headshot?${esc(new URLSearchParams({ team, name, v: 2 }))}" `
   + `alt="" loading="lazy" onerror="this.parentNode.classList.add('none'); this.remove()"></span>`;
 
 // Text from Kalshi or ESPN, made safe to put inside HTML (and attribute values). Applied where
