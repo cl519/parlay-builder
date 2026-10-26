@@ -2,7 +2,7 @@
 // (prices, live stats, scores) so scroll positions, momentum and tooltips are never disturbed.
 
 import { getJSON } from "./api.js";
-import { esc, handicap, headshotHTML, logoHTML, teamName, tipTime } from "./format.js";
+import { esc, handicap, logoHTML, teamName, tipTime } from "./format.js";
 import { chipState, liveGame, playerStats, statusKind } from "./markets.js";
 import { logTableHTML } from "./tooltip.js";
 import { STATS, allLegs, pickCount, state, visibleGames } from "./state.js";
@@ -114,12 +114,12 @@ function playersHTML(g) {
       const group = `p|${g.key}|${p.name}|${s}`;
       return chipRow(s, group, p[s].map((l) => chipHTML(l, group, `${l.line}+`)).join(""));
     }).join("");
-    // Header band (photo beside name + box score, same height), then the prop rows full width.
-    // The box score is right there, so the name has no hover card here (it does on My bets).
-    html += `<div class="player" data-log="${esc(key)}"><div class="phead">${headshotHTML(p.team, p.name, "portrait")}`
-      + `<div class="pinfo"><div class="name"><span>${esc(p.name)}<span class="ppos">${posHTML(logs[key])}</span></span>`
+    // Name, box score, then the prop rows. The box score is right there, so the name has no
+    // hover card here (it does on My bets).
+    html += `<div class="player" data-log="${esc(key)}">`
+      + `<div class="name"><span>${esc(p.name)}<span class="ppos">${posHTML(logs[key])}</span></span>`
       + `<span data-pl="${esc(`${g.key}|${p.name}`)}">${statLineHTML(g.key, p.name)}</span></div>`
-      + `<div class="plog">${logs[key] ? logTableHTML(logs[key], true) : ""}</div></div></div>${rows}</div>`;
+      + `<div class="plog">${logs[key] ? logTableHTML(logs[key], true) : ""}</div>${rows}</div>`;
   }
   return html || '<div class="empty">No player props listed</div>';
 }
