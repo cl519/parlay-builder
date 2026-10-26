@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="parlay-token" content="__TOKEN__">
+  <title>Parlay Builder</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script type="module" src="/static/js/main.js"></script>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <h1>🏀 Parlay Builder</h1>
+      <div class="tabs" id="tabs">
+        <a href="#build" data-view="build">Build</a>
+        <a href="#bets" data-view="bets">My bets <span class="tab-count" id="betCount"></span></a>
+      </div>
+      <div class="days build-only" id="days"></div>
+      <span class="legend" id="legend"><span class="dot"></span><span class="txt">Thin market</span></span>
+      <span class="balance" id="balance" hidden><span class="lbl">Balance</span> <b id="balanceAmt"></b> <button class="move" id="balanceMove" hidden></button></span>
+      <span class="meta" id="updated">Loading…</span>
+      <button id="refresh">Refresh prices</button>
+    </div>
+    <nav class="nav build-only" id="nav"></nav>
+  </header>
+
+  <div class="layout" id="layout">
+    <main id="games" class="build-only"><div class="loading">Loading games from Kalshi…</div></main>
+    <main id="bets" class="bets-only"></main>
+
+    <aside class="slip build-only" id="slip">
+      <div class="slip-head" id="slipHead">
+        <h3>Bet slip</h3><span class="badge" id="legCount">0</span>
+        <span class="px" id="headPrice"></span>
+      </div>
+      <div class="slip-body">
+        <div class="legs" id="legs"></div>
+        <div class="summary">
+          <div class="stake"><span>$</span><input id="stake" type="number" min="1" step="1" value="5"></div>
+          <div class="kv"><span>Live price <span class="dot-live" id="quoteDot"></span></span><span class="v" id="quotePrice">–</span></div>
+          <div class="kv"><span>Chance · multiplier</span><span class="v" id="quoteChance">–</span></div>
+          <div class="kv"><span>Cost + fee</span><span class="v" id="quoteCost">–</span></div>
+          <div class="kv big"><span>To win</span><span class="v" id="quotePayout">–</span></div>
+          <div class="kv muted"><span>Legs multiplied (naive)</span><span class="v" id="naivePrice">–</span></div>
+          <div class="floor-warn" id="floorWarn" hidden></div>
+          <button class="btn primary" id="placeBtn">Place bet</button>
+          <div class="note" id="note">Live price updates a second after you stop tapping. Nothing is charged until you confirm.</div>
+          <div class="links">
+            <button class="linkish" id="clearBtn">Clear slip</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="tooltip" id="tooltip" role="tooltip"></div>
+
+  <div class="modal-bg" id="modalBg" hidden>
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3 id="modalTitle"></h3>
+      <div id="modalBody"></div>
+      <div class="modal-actions" id="modalActions"></div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Never commit keys (setup keeps yours in ~/.parlay, outside this folder)
+*.pem
+*.key
+*private_key*
+
+# Runtime
+server.log
+
+# Personal notes
+JOURNAL.md
+
+.DS_Store

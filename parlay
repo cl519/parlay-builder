@@ -1,0 +1,66 @@
+#!/bin/zsh
+# Parlay Builder: a local site for building and tracking Kalshi NBA parlays.
+#   ./parlay setup    install (first time) and connect your Kalshi API key
+#   ./parlay          start the server if needed and open the site
+#   ./parlay stop     stop the server
+#   ./parlay log      recent server output
+#   ./parlay update   get the latest version (git pull), then restart
+set -e
+DIR="${0:A:h}"
+VENV="$DIR/.venv"
+PORT="${PARLAY_PORT:-8787}"
+URL="http://127.0.0.1:$PORT"
+LOG="$DIR/server.log"
+CONFIG="${PARLAY_HOME:-$HOME/.parlay}/config.json"
+
+install() {
+  if ! /usr/bin/python3 -c 'import sys; sys.exit(sys.version_info < (3, 9))' 2>/dev/null; then
+    echo "Python 3 isn't ready yet. If a window asked to install the command line developer tools,"
+    echo "click Install, wait for it to finish, then run ./parlay setup again."
+    exit 1
+  fi
+  if [[ ! -x "$VENV/bin/python" ]]; then
+    echo "Installing (one time, about a minute)..."
+    /usr/bin/python3 -m venv "$VENV"
+  fi
+  "$VENV/bin/pip" install --quiet --disable-pip-version-check -r "$DIR/requirements.txt"
+}
+
+stop() {
+  pkill -f "$DIR/server.py" && echo "Parlay server stopped." || echo "Parlay server wasn't running."
+}
+
+case "$1" in
+  setup)
+    install
+    "$VENV/bin/python" "$DIR/setup_key.py"
+    exit 0 ;;
+  stop)
+    stop; exit 0 ;;
+  log)
+    tail -n 50 "$LOG"; exit 0 ;;
+  update)
+    git -C "$DIR" pull --ff-only
+    install
+    stop
+    exec "$0" ;;
+  "") ;;
+  *)
+    echo "Usage: ./parlay [setup|stop|log|update]"; exit 1 ;;
+esac
+
+if [[ ! -x "$VENV/bin/python" || ! -f "$CONFIG" ]]; then
+  echo "Not set up yet. Run: ./parlay setup"
+  exit 1
+fi
+
+if ! curl -s -o /dev/null "$URL"; then
+  nohup "$VENV/bin/python" "$DIR/server.py" > "$LOG" 2>&1 &
+  for i in {1..30}; do
+    curl -s -o /dev/null "$URL" && break
+    sleep 0.5
+  done
+  curl -s -o /dev/null "$URL" || { echo "Server didn't start:"; tail -n 5 "$LOG"; exit 1; }
+  echo "Parlay server started."
+fi
+open "$URL"

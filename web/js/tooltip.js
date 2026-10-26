@@ -1,0 +1,109 @@
+// Hover tooltips: bid/ask detail on every price button, explanation on the "Thin market" legend,
+// and a player's last 5 games + season averages on their name.
+
+import { getJSON } from "./api.js";
+import { state } from "./state.js";
+
+const LEGEND_TEXT = '<div class="tt">Thin market</div>Few trades on this line, so the bid and ask are 10¢+ apart '
+  + "and the button price is less reliable. Hover any button to see its bid and ask.";
+const TARGETS = ".chip[data-t], #legend, .pname[data-team]";
+const LOG_STATS = ["MIN", "PTS", "REB", "AST", "3PM", "STL", "BLK"];
+
+let el, timer, current = null;  // current: the element the tooltip is for (async content checks it)
+
+function position(target) {
+  el.classList.remove("below");
+  const r = target.getBoundingClientRect();
+  const w = el.offsetWidth, h = el.offsetHeight;
+  const left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, window.innerWidth - w - 8));
+  let top = r.top - h - 10;
+  if (top < 8) { top = r.bottom + 10; el.classList.add("below"); }
+  el.style.left = left + "px";
+  el.style.top = top + "px";
+  el.style.setProperty("--ax", r.left + r.width / 2 - left + "px");
+}
+
+function show(target, html) {
+  el.innerHTML = html;
+  el.classList.toggle("wide", target.matches(".pname"));
+  position(target);
+  el.classList.add("show");
+}
+
+function hide() {
+  clearTimeout(timer);
+  current = null;
+  el.classList.remove("show");
+}
+
+function chipHTML(chip) {
+  const leg = state.byTicker[chip.dataset.t];
+  if (!leg) return "";
+  const { bid, ask } = leg;
+  const hasAsk = ask != null && ask > 0 && ask < 100;
+  const hasBid = bid != null && bid > 0;
+  const row = (k, v) => `<span>${k}</span><span>${v}</span>`;
+  let html = `<div class="tt">${leg.label}</div><div class="grid">`
+    + row("Ask (you buy at)", hasAsk ? `${ask}¢` : "none")
+    + row("Bid", hasBid ? `${bid}¢` : "none")
+    + (hasAsk && hasBid ? row("Midpoint", `~${Math.round((bid + ask) / 2)}¢`) : "")
+    + "</div>";
+  if (chip.classList.contains("thin")) {
+    html += `<div class="warn">Thin market: ${ask - bid}¢ gap, so the ask overstates the price. `
+      + "Your parlay's live price is set by makers, not this number.</div>";
+  }
+  return html;
+}
+
+function playerLogHTML(name, log) {
+  if (log.missing) return `<div class="tt">${name}</div><div class="muted">Not found on ESPN's roster.</div>`;
+  if (!log.played) return `<div class="tt">${name}</div><div class="muted">No regular-season games yet.</div>`;
+  const cells = (xs) => xs.map((x) => `<td>${x}</td>`).join("");
+  const day = (iso) => new Date(iso).toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
+  const rows = log.games.map((g) => `<tr><td class="d">${day(g.date)}</td>`
+    + `<td class="d">${g.at ? "@" : "vs"} ${g.opp} <i class="${g.result === "W" ? "w" : "l"}">${g.result}</i></td>`
+    + `${cells(LOG_STATS.map((s) => g[s]))}</tr>`).join("");
+  const label = log.played === 1 ? "Only game" : log.played <= 5 ? `All ${log.played} games` : "Last 5";
+  return `<div class="tt">${name} <span class="muted">· ${label}</span></div><table class="log">`
+    + `<tr><th></th><th></th>${LOG_STATS.map((s) => `<th>${s}</th>`).join("")}</tr>${rows}`
+    + `<tr class="avg"><td colspan="2">Season avg <span class="muted">(${log.played} GP)</span></td>`
+    + `${cells(LOG_STATS.map((s) => log.avg[s].toFixed(1)))}</tr></table>`;
+}
+
+async function showPlayer(target) {
+  const name = target.textContent;
+  current = target;
+  show(target, `<div class="tt">${name}</div><div class="muted">Loading recent games…</div>`);
+  let html;
+  try {
+    const q = new URLSearchParams({ team: target.dataset.team, name });
+    html = playerLogHTML(name, await getJSON(`/api/player?${q}`));
+  } catch (e) {
+    html = `<div class="tt">${name}</div><div class="muted">Couldn't load games: ${e.message}</div>`;
+  }
+  if (current === target) show(target, html);  // still hovering this name
+}
+
+export function installTooltips() {
+  el = document.getElementById("tooltip");
+  document.addEventListener("mouseover", (e) => {
+    const target = e.target.closest(TARGETS);
+    if (!target) return;
+    clearTimeout(timer);
+    if (target === current) return;
+    if (target.matches(".pname")) {
+      timer = setTimeout(() => showPlayer(target), 250);
+      return;
+    }
+    const isChip = target.matches(".chip");
+    timer = setTimeout(() => {
+      current = target;
+      show(target, isChip ? chipHTML(target) : LEGEND_TEXT);
+    }, isChip ? 250 : 100);
+  });
+  document.addEventListener("mouseout", (e) => {
+    if (e.target.closest(TARGETS) && !e.relatedTarget?.closest?.(TARGETS)) hide();
+  });
+  window.addEventListener("scroll", hide, true);
+  document.addEventListener("click", hide, true);
+}
