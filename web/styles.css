@@ -130,13 +130,12 @@ header {
   position: relative; flex: none; width: 200px; align-self: stretch; min-height: 170px;  /* as tall as name + 5 game rows */
   border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, var(--chip-hover), var(--chip));
 }
-/* Absolute, so the photo's own size never sets the band's height: the name and box score do */
-/* ESPN's photos have room at the sides; cropping a little of it keeps the face big */
+/* Absolute, so the photo's own size never sets the band's height (the name and box score do).
+   ESPN's photos have room at the sides; cropping a little of it keeps the face big. */
 .portrait img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center bottom; }
 .pinfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .plog { overflow-x: auto; scrollbar-width: none; }
-/* Roomier than the hover card, to sit with the betting rows */
-/* Box-score look: framed, header strip, a line around every cell */
+/* Box-score look, roomier than the hover card: framed, header strip, a line around every cell */
 .plog .log {
   font-size: 13px; border-collapse: separate; border-spacing: 0;
   border: 1px solid var(--line); border-radius: 8px; overflow: hidden;

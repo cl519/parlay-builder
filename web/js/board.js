@@ -25,12 +25,12 @@ function chipRow(label, rowKey, chips, extraClass = "") {
 }
 
 // ---------- Each player's recent games, beside their photo ----------
-// The hover card's table (last 5 games + season average), loaded as a player scrolls near the
-// screen and kept for the session (the server refreshes its copy every 10 minutes).
+// The hover card's table (last 5 games + season average) and the player's position, loaded as
+// a player scrolls near the screen and kept for the session (the server refreshes its copy
+// every 10 minutes).
 
 const logs = {};  // "team|name" -> game log, once loaded
 
-// The box score is right there on Build, so the name has no hover card here (it does on My bets)
 const posHTML = (log) => (log?.pos ? ` - ${esc(log.pos)}` : "");
 
 function fillLog(el) {
@@ -48,7 +48,10 @@ const loader = new IntersectionObserver((entries) => {
         logs[key] = log;
         document.querySelectorAll(`.player[data-log="${CSS.escape(key)}"]`).forEach(fillLog);
       })
-      .catch(() => {});  // the hover card still shows the error
+      .catch((e) => {
+        document.querySelectorAll(`.player[data-log="${CSS.escape(key)}"] .plog`).forEach((p) =>
+          (p.innerHTML = `<div class="muted">Couldn't load games: ${esc(e.message)}</div>`));
+      });
   }
 }, { rootMargin: "800px 0px" });
 
@@ -111,7 +114,8 @@ function playersHTML(g) {
       const group = `p|${g.key}|${p.name}|${s}`;
       return chipRow(s, group, p[s].map((l) => chipHTML(l, group, `${l.line}+`)).join(""));
     }).join("");
-    // Header band (photo beside name + box score, same height), then the prop rows full width
+    // Header band (photo beside name + box score, same height), then the prop rows full width.
+    // The box score is right there, so the name has no hover card here (it does on My bets).
     html += `<div class="player" data-log="${esc(key)}"><div class="phead">${headshotHTML(p.team, p.name, "portrait")}`
       + `<div class="pinfo"><div class="name"><span>${esc(p.name)}<span class="ppos">${posHTML(logs[key])}</span></span>`
       + `<span data-pl="${esc(`${g.key}|${p.name}`)}">${statLineHTML(g.key, p.name)}</span></div>`

@@ -10,7 +10,7 @@ const TEAM = {
 
 export const teamName = (code) => TEAM[code] || code;
 
-// Pictures come from ESPN's image server, resized there. ESPN's team codes, where they differ:
+// Pictures come from ESPN's image servers. ESPN's team codes, where they differ from Kalshi's:
 const ESPN_CODE = { GSW: "gs", NOP: "no", NYK: "ny", SAS: "sa", UTA: "utah", WAS: "wsh" };
 const IMG = 'alt="" loading="lazy" onerror="this.remove()"';  // no picture: just leave it out
 const initials = (name) => name.split(/\s+/).filter((w) => /^[A-Z]/.test(w)).slice(0, 2).map((w) => w[0]).join("");

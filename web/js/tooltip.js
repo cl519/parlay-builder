@@ -62,23 +62,23 @@ function chipHTML(chip) {
 }
 
 /**
- * A player's last 5 games and season average as a table: the hover card, and (compact: no dates,
- * shorter labels) under each player's photo on Build.
+ * A player's last 5 games and season average as a table: the hover card, and (board) beside each
+ * player's photo on Build, where it has no dates, a "Last 5 games" label and always 5 game rows.
  */
-export function logTableHTML(log, compact = false) {
+export function logTableHTML(log, board = false) {
   if (log.missing) return `<div class="muted">Not found on ESPN's roster.</div>`;
   if (!log.played) return `<div class="muted">No regular-season games yet.</div>`;
   const day = (iso) => new Date(iso).toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
-  let rows = log.games.map((g) => `<tr>${compact ? "" : `<td class="d">${day(g.date)}</td>`}`
+  let rows = log.games.map((g) => `<tr>${board ? "" : `<td class="d">${day(g.date)}</td>`}`
     + `<td class="d">${g.at ? "@" : "vs"} ${esc(g.opp)} <i class="${g.result === "W" ? "w" : "l"}">${esc(g.result)}</i></td>`
     + `${statCells(g, String)}</tr>`).join("");
-  const lead = compact ? 1 : 2;  // label columns before the stats
+  const lead = board ? 1 : 2;  // label columns before the stats
   // On Build: games not played yet are rows of dashes, so the average always sits at the bottom
   const none = `<tr class="none"><td class="d">–</td>${LOG_STATS.map(() => "<td>–</td>").join("")}</tr>`;
-  if (compact) rows += none.repeat(BOARD_ROWS - log.games.length);
-  const corner = compact ? '<th class="cap">Last 5 games</th>' : "<th></th><th></th>";
+  if (board) rows += none.repeat(Math.max(0, BOARD_ROWS - log.games.length));
+  const corner = board ? '<th class="cap">Last 5 games</th>' : "<th></th><th></th>";
   return `<table class="log"><tr>${corner}${LOG_STATS.map(headCell).join("")}</tr>${rows}`
-    + `<tr class="avg"><td colspan="${lead}">${compact ? "Avg" : `Season avg <span class="muted">(${log.played} GP)</span>`}</td>`
+    + `<tr class="avg"><td colspan="${lead}">${board ? "Avg" : `Season avg <span class="muted">(${log.played} GP)</span>`}</td>`
     + `${statCells(log.avg, (x) => x.toFixed(1))}</tr></table>`;
 }
 
