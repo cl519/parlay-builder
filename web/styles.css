@@ -395,9 +395,10 @@ html:has(body[data-view="bets"]), body[data-view="bets"] { overflow-anchor: none
   --c: 127, 176, 255; background: rgba(var(--c), .14); color: rgb(var(--c));
 }
 .p-counts .use-slip:hover { background: rgba(var(--c), .26); }
-/* Each action its own color: Use in slip blue, Cash out green (money back), Add more purple */
+/* Each action its own color: Use in slip blue, Cash out green (money back), Add more purple, Share gray */
 .p-counts .use-slip[data-cashout] { --c: 46, 204, 113; }
 .p-counts .use-slip[data-add] { --c: 188, 140, 255; }
+.p-counts .use-slip[data-share] { --c: 170, 178, 190; }
 .p-counts .use-slip ~ .use-slip { margin-left: 0; }
 
 .p-legs { padding: 2px 8px 6px; }

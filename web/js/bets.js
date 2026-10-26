@@ -399,7 +399,8 @@ function parlayHTML(p, title, others = []) {
     <div class="p-counts">${stats}${reusable
       ? `<button class="use-slip" data-use="${p.ticker}" title="Put this parlay's open legs (minus any you marked to drop) in the Build slip">Use in slip</button>` : ""}${
       !p.single && !dead.length && !p.gone ? `<button class="use-slip" data-cashout="${p.ticker}" title="See what market makers would pay for this parlay right now">Cash out</button>` : ""}${
-      addLegs(p) ? `<button class="use-slip" data-add="${p.ticker}" title="Buy more of this ${p.single ? "bet" : "parlay"} at today's price (once legs have hit: the legs still to go)">Add more</button>` : ""}</div>
+      addLegs(p) ? `<button class="use-slip" data-add="${p.ticker}" title="Buy more of this ${p.single ? "bet" : "parlay"} at today's price (once legs have hit: the legs still to go)">Add more</button>` : ""}${
+      !p.single ? `<button class="use-slip" data-share="${p.ticker}" title="Copy a Kalshi link that opens these legs in Kalshi's combo builder">Share</button>` : ""}</div>
     ${addBarHTML(p)}
     <div class="p-legs">${main.map((l) => legHTML(p, l)).join("")}</div>
     ${folded.length ? `<button class="hit-toggle" data-expand="${p.ticker}">${expanded[p.ticker] ? "Hide" : "Show"} ${folded.length} ${folded.length === 1 ? "leg" : "legs"} that hit</button>
@@ -713,6 +714,21 @@ function touch(ticker) {
   load(true);
 }
 
+/**
+ * Copy the link Kalshi's own Share uses: its combo builder reads the parlay's ticker from
+ * ?marketTicker= and loads the legs (found in kalshi.com's code; not a documented API).
+ */
+async function copyShareLink(button) {
+  const url = `https://kalshi.com/combos?marketTicker=${encodeURIComponent(button.dataset.share)}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    button.textContent = "Link copied";
+  } catch {
+    button.textContent = "Couldn't copy";
+  }
+  setTimeout(() => { button.textContent = "Share"; }, 1500);
+}
+
 function onClick(e) {
   const sortButton = e.target.closest("[data-sort]");
   if (sortButton) {
@@ -732,6 +748,8 @@ function onClick(e) {
   }
   const cashOut = e.target.closest("[data-cashout]");
   if (cashOut) return startCashOut(byTicker.get(cashOut.dataset.cashout), () => touch(cashOut.dataset.cashout));
+  const share = e.target.closest("[data-share]");
+  if (share) return copyShareLink(share);
   const use = e.target.closest("[data-use]");
   if (use) return useInSlip(byTicker.get(use.dataset.use));
   const kid = e.target.closest("[data-kid]");
