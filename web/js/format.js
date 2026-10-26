@@ -13,11 +13,14 @@ export const teamName = (code) => TEAM[code] || code;
 // Pictures come from ESPN's image server, resized there. ESPN's team codes, where they differ:
 const ESPN_CODE = { GSW: "gs", NOP: "no", NYK: "ny", SAS: "sa", UTA: "utah", WAS: "wsh" };
 const IMG = 'alt="" loading="lazy" onerror="this.remove()"';  // no picture: just leave it out
+const initials = (name) => name.split(/\s+/).filter((w) => /^[A-Z]/.test(w)).slice(0, 2).map((w) => w[0]).join("");
 export const logoURL = (team) =>
   `https://a.espncdn.com/combiner/i?img=/i/teamlogos/nba/500/${ESPN_CODE[team] || String(team).toLowerCase()}.png&w=64&h=64`;
 export const logoHTML = (team) => `<img class="logo" src="${esc(logoURL(team))}" ${IMG}>`;
-export const headshotHTML = (team, name) =>  // the frame stays when there's no photo, so names line up
-  `<span class="headshot"><img src="/api/headshot?${esc(new URLSearchParams({ team, name }))}" ${IMG}></span>`;
+// The frame stays when there's no photo (showing initials), so the layout doesn't shift.
+export const headshotHTML = (team, name, cls = "headshot") =>
+  `<span class="${cls}" data-i="${esc(initials(name))}"><img src="/api/headshot?${esc(new URLSearchParams({ team, name }))}" `
+  + `alt="" loading="lazy" onerror="this.parentNode.classList.add('none'); this.remove()"></span>`;
 
 // Text from Kalshi or ESPN, made safe to put inside HTML (and attribute values). Applied where
 // it's inserted, not on arrival: names stay as-is for matching (De'Aaron Fox vs ESPN's box score).

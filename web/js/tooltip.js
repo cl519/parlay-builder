@@ -10,8 +10,11 @@ const LEGEND_TEXT = '<div class="tt">Thin market</div>Few trades on this line, s
 const TARGETS = ".chip[data-t], #legend, .pname[data-team]";
 // Columns of the game log: a stat, or [made, tried] shown as "5/12"
 const LOG_STATS = ["MIN", "PTS", "REB", "AST", ["FG", "FGM", "FGA"], ["3PT", "3PM", "3PA"], "STL", "BLK"];
-const colName = (s) => (Array.isArray(s) ? s[0] : s);
-const cell = (row, s, fmt) => (Array.isArray(s) ? `${fmt(row[s[1]])}/${fmt(row[s[2]])}` : fmt(row[s]));
+// Made and tried are separate cells, so the slashes line up down the column
+const headCell = (s) => (Array.isArray(s) ? `<th colspan="2" class="fr">${s[0]}</th>` : `<th>${s}</th>`);
+const statCells = (row, fmt) => LOG_STATS.map((s) => (Array.isArray(s)
+  ? `<td class="fm">${esc(fmt(row[s[1]]))}</td><td class="fa">/${esc(fmt(row[s[2]]))}</td>`
+  : `<td>${esc(fmt(row[s]))}</td>`)).join("");
 
 let el, timer, current = null;  // current: the element the tooltip is for (async content checks it)
 
@@ -63,16 +66,15 @@ function playerLogHTML(rawName, team, log) {
   const name = headshotHTML(team, rawName) + esc(rawName);
   if (log.missing) return `<div class="tt">${name}</div><div class="muted">Not found on ESPN's roster.</div>`;
   if (!log.played) return `<div class="tt">${name}</div><div class="muted">No regular-season games yet.</div>`;
-  const cells = (xs) => xs.map((x) => `<td>${esc(x)}</td>`).join("");
   const day = (iso) => new Date(iso).toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
   const rows = log.games.map((g) => `<tr><td class="d">${day(g.date)}</td>`
     + `<td class="d">${g.at ? "@" : "vs"} ${esc(g.opp)} <i class="${g.result === "W" ? "w" : "l"}">${esc(g.result)}</i></td>`
-    + `${cells(LOG_STATS.map((s) => cell(g, s, String)))}</tr>`).join("");
+    + `${statCells(g, String)}</tr>`).join("");
   const label = log.played === 1 ? "Only game" : log.played <= 5 ? `All ${log.played} games` : "Last 5";
   return `<div class="tt">${name} <span class="muted">· ${label}</span></div><table class="log">`
-    + `<tr><th></th><th></th>${LOG_STATS.map((s) => `<th>${colName(s)}</th>`).join("")}</tr>${rows}`
+    + `<tr><th></th><th></th>${LOG_STATS.map(headCell).join("")}</tr>${rows}`
     + `<tr class="avg"><td colspan="2">Season avg <span class="muted">(${log.played} GP)</span></td>`
-    + `${cells(LOG_STATS.map((s) => cell(log.avg, s, (x) => x.toFixed(1))))}</tr></table>`;
+    + `${statCells(log.avg, (x) => x.toFixed(1))}</tr></table>`;
 }
 
 async function showPlayer(target) {

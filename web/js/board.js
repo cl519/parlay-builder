@@ -80,9 +80,9 @@ function playersHTML(g) {
       const group = `p|${g.key}|${p.name}|${s}`;
       return chipRow(s, group, p[s].map((l) => chipHTML(l, group, `${l.line}+`)).join(""));
     }).join("");
-    html += `<div class="player"><div class="name">${headshotHTML(p.team, p.name)}`
+    html += `<div class="player">${headshotHTML(p.team, p.name, "portrait")}<div class="pbody"><div class="name">`
       + `<span class="pname" data-team="${esc(p.team)}">${esc(p.name)}</span>`
-      + `<span data-pl="${esc(`${g.key}|${p.name}`)}">${statLineHTML(g.key, p.name)}</span></div>${rows}</div>`;
+      + `<span data-pl="${esc(`${g.key}|${p.name}`)}">${statLineHTML(g.key, p.name)}</span></div>${rows}</div></div>`;
   }
   return html || '<div class="empty">No player props listed</div>';
 }
