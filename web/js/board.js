@@ -1,6 +1,7 @@
 // The game list: full render when the set of markets changes, in-place patch for everything else
 // (prices, live stats, scores) so scroll positions, momentum and tooltips are never disturbed.
 
+import { getJSON } from "./api.js";
 import { esc, handicap, headshotHTML, logoHTML, teamName, tipTime } from "./format.js";
 import { chipState, liveGame, playerStats, statusKind } from "./markets.js";
 import { STATS, allLegs, pickCount, state, visibleGames } from "./state.js";
@@ -17,10 +18,56 @@ function chipHTML(leg, group, label, extraClass = "") {
     + `<span class="ln">${esc(label)}</span><span class="px">${s.price}</span></button>`;
 }
 
-function chipRow(label, rowKey, chips, extraClass = "") {
+function chipRow(label, rowKey, chips, extraClass = "", tail = "") {
   return `<div class="row"><span class="lbl">${esc(label)}</span>`
-    + `<div class="chips ${extraClass}" data-k="${esc(rowKey)}">${chips}</div></div>`;
+    + `<div class="chips ${extraClass}" data-k="${esc(rowKey)}">${chips}</div>${tail}</div>`;
 }
+
+// ---------- Recent games beside each prop row ----------
+// The player's last 5 games (oldest to newest, opponent on top, newest beside the average) and
+// season average, from the same
+// ESPN game log as the hover card. Loaded as a player scrolls near the screen; kept for the
+// session (the server refreshes its copy every 10 minutes).
+
+const RECENT = 5;
+const logs = {};  // "team|name" -> game log, once loaded
+const statOf = (row, stat) => (stat === "STL+BLK" ? row.STL + row.BLK : row[stat === "3PT" ? "3PM" : stat]);
+// Slot i of 5, left to right: games[] is newest first, so the last slot is games[0]
+const slots = (fill) => Array.from({ length: RECENT }, (_, i) => fill(RECENT - 1 - i)).join("");
+
+function recentHTML(log, stat) {
+  if (!log?.played) return "";
+  return slots((i) => `<span>${log.games[i] ? statOf(log.games[i], stat) : ""}</span>`)
+    + `<b>${statOf(log.avg, stat).toFixed(1)}</b>`;
+}
+
+function recentHeadHTML(log) {
+  if (!log?.played) return "";
+  return slots((i) => `<span>${log.games[i] ? esc(log.games[i].opp) : ""}</span>`) + "<b>Avg</b>";
+}
+
+const metaHTML = (log) => (log?.played ? `${log.avg.MIN.toFixed(0)} min · ${log.played} GP` : "");
+
+function fillRecent(el) {
+  const log = logs[el.dataset.log];
+  el.querySelector(".recent.head").innerHTML = recentHeadHTML(log);
+  el.querySelector(".pmeta").textContent = metaHTML(log);
+  el.querySelectorAll(".recent[data-s]").forEach((r) => (r.innerHTML = recentHTML(log, r.dataset.s)));
+}
+
+const loader = new IntersectionObserver((entries) => {
+  for (const { target, isIntersecting } of entries) {
+    if (!isIntersecting) continue;
+    loader.unobserve(target);
+    const key = target.dataset.log, i = key.indexOf("|");
+    getJSON(`/api/player?${new URLSearchParams({ team: key.slice(0, i), name: key.slice(i + 1) })}`)
+      .then((log) => {
+        logs[key] = log;
+        document.querySelectorAll(`.player[data-log="${CSS.escape(key)}"]`).forEach(fillRecent);
+      })
+      .catch(() => {});  // the hover card still shows the error
+  }
+}, { rootMargin: "800px 0px" });
 
 function headLiveHTML(g) {
   const kind = statusKind(g.status);
@@ -76,13 +123,17 @@ function playersHTML(g) {
       team = p.team;
       html += `<div class="team-title">${logoHTML(team)}${esc(teamName(team))}</div>`;
     }
+    const log = logs[`${p.team}|${p.name}`];
     const rows = STATS.filter((s) => p[s].length).map((s) => {
       const group = `p|${g.key}|${p.name}|${s}`;
-      return chipRow(s, group, p[s].map((l) => chipHTML(l, group, `${l.line}+`)).join(""));
+      return chipRow(s, group, p[s].map((l) => chipHTML(l, group, `${l.line}+`)).join(""), "",
+        `<div class="recent" data-s="${esc(s)}">${recentHTML(log, s)}</div>`);
     }).join("");
-    html += `<div class="player">${headshotHTML(p.team, p.name, "portrait")}<div class="pbody"><div class="name">`
-      + `<span class="pname" data-team="${esc(p.team)}">${esc(p.name)}</span>`
-      + `<span data-pl="${esc(`${g.key}|${p.name}`)}">${statLineHTML(g.key, p.name)}</span></div>${rows}</div></div>`;
+    html += `<div class="player" data-log="${esc(`${p.team}|${p.name}`)}">`
+      + `<div class="pside">${headshotHTML(p.team, p.name, "portrait")}<div class="pmeta">${metaHTML(log)}</div></div>`
+      + `<div class="pbody"><div class="name"><span class="pname" data-team="${esc(p.team)}">${esc(p.name)}</span>`
+      + `<span data-pl="${esc(`${g.key}|${p.name}`)}">${statLineHTML(g.key, p.name)}</span>`
+      + `<div class="recent head">${recentHeadHTML(log)}</div></div>${rows}</div></div>`;
   }
   return html || '<div class="empty">No player props listed</div>';
 }
@@ -133,6 +184,8 @@ export function renderBoard() {
     else if (el.classList.contains("spread")) centerSpread(el);
   });
   renderedSig = structureSig();
+  loader.disconnect();
+  document.querySelectorAll(".player[data-log]").forEach((el) => logs[el.dataset.log] || loader.observe(el));
 }
 
 function setHTML(el, html) {
