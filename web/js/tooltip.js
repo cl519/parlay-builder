@@ -2,13 +2,16 @@
 // and a player's last 5 games + season averages on their name.
 
 import { getJSON } from "./api.js";
-import { esc } from "./format.js";
+import { esc, headshotHTML } from "./format.js";
 import { state } from "./state.js";
 
 const LEGEND_TEXT = '<div class="tt">Thin market</div>Few trades on this line, so the bid and ask are 10¢+ apart '
   + "and the button price is less reliable. Hover any button to see its bid and ask.";
 const TARGETS = ".chip[data-t], #legend, .pname[data-team]";
-const LOG_STATS = ["MIN", "PTS", "REB", "AST", "3PM", "STL", "BLK"];
+// Columns of the game log: a stat, or [made, tried] shown as "5/12"
+const LOG_STATS = ["MIN", "PTS", "REB", "AST", ["FG", "FGM", "FGA"], ["3PT", "3PM", "3PA"], "STL", "BLK"];
+const colName = (s) => (Array.isArray(s) ? s[0] : s);
+const cell = (row, s, fmt) => (Array.isArray(s) ? `${fmt(row[s[1]])}/${fmt(row[s[2]])}` : fmt(row[s]));
 
 let el, timer, current = null;  // current: the element the tooltip is for (async content checks it)
 
@@ -56,20 +59,20 @@ function chipHTML(chip) {
   return html;
 }
 
-function playerLogHTML(rawName, log) {
-  const name = esc(rawName);
+function playerLogHTML(rawName, team, log) {
+  const name = headshotHTML(team, rawName) + esc(rawName);
   if (log.missing) return `<div class="tt">${name}</div><div class="muted">Not found on ESPN's roster.</div>`;
   if (!log.played) return `<div class="tt">${name}</div><div class="muted">No regular-season games yet.</div>`;
   const cells = (xs) => xs.map((x) => `<td>${esc(x)}</td>`).join("");
   const day = (iso) => new Date(iso).toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
   const rows = log.games.map((g) => `<tr><td class="d">${day(g.date)}</td>`
     + `<td class="d">${g.at ? "@" : "vs"} ${esc(g.opp)} <i class="${g.result === "W" ? "w" : "l"}">${esc(g.result)}</i></td>`
-    + `${cells(LOG_STATS.map((s) => g[s]))}</tr>`).join("");
+    + `${cells(LOG_STATS.map((s) => cell(g, s, String)))}</tr>`).join("");
   const label = log.played === 1 ? "Only game" : log.played <= 5 ? `All ${log.played} games` : "Last 5";
   return `<div class="tt">${name} <span class="muted">· ${label}</span></div><table class="log">`
-    + `<tr><th></th><th></th>${LOG_STATS.map((s) => `<th>${s}</th>`).join("")}</tr>${rows}`
+    + `<tr><th></th><th></th>${LOG_STATS.map((s) => `<th>${colName(s)}</th>`).join("")}</tr>${rows}`
     + `<tr class="avg"><td colspan="2">Season avg <span class="muted">(${log.played} GP)</span></td>`
-    + `${cells(LOG_STATS.map((s) => log.avg[s].toFixed(1)))}</tr></table>`;
+    + `${cells(LOG_STATS.map((s) => cell(log.avg, s, (x) => x.toFixed(1))))}</tr></table>`;
 }
 
 async function showPlayer(target) {
@@ -79,7 +82,7 @@ async function showPlayer(target) {
   let html;
   try {
     const q = new URLSearchParams({ team: target.dataset.team, name });
-    html = playerLogHTML(name, await getJSON(`/api/player?${q}`));
+    html = playerLogHTML(name, target.dataset.team, await getJSON(`/api/player?${q}`));
   } catch (e) {
     html = `<div class="tt">${esc(name)}</div><div class="muted">Couldn't load games: ${esc(e.message)}</div>`;
   }

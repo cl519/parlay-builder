@@ -56,7 +56,11 @@ header {
   flex: none; padding: 5px 10px; border-radius: 999px; background: var(--chip);
   color: var(--text); text-decoration: none; font-size: 12px; font-weight: 600;
 }
+.nav a { display: inline-flex; align-items: center; }
+.nav a .logo { width: 16px; height: 16px; margin-right: 3px; }
+.nav a .logo:nth-of-type(2) { margin-left: 4px; }
 .nav a .t { color: var(--muted); font-weight: 500; margin-left: 6px; }
+.nav a .n:empty { display: none; }
 .nav a .n {
   background: var(--accent); color: var(--accent-ink); border-radius: 999px;
   padding: 0 6px; margin-left: 6px; font-size: 11px;
@@ -88,7 +92,10 @@ header {
   display: flex; align-items: baseline; gap: 10px; padding: 14px 16px;
   border-bottom: 1px solid var(--line); background: var(--panel-2);
 }
-.game-head h2 { margin: 0; font-size: 17px; }
+.game-head h2 { margin: 0; font-size: 17px; display: flex; align-items: center; gap: 6px; align-self: center; }
+.game-head h2 .logo { width: 26px; height: 26px; }
+.game-head h2 .at { color: var(--muted); font-weight: 500; margin: 0 4px; }
+.logo { object-fit: contain; flex: none; }
 .game-head .tipoff { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
 .game-head .count { margin-left: auto; color: var(--accent); font-size: 12px; font-weight: 600; }
 .headlive { display: inline-flex; align-items: baseline; gap: 10px; }
@@ -109,7 +116,8 @@ header {
 .section-title {
   font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin: 0 0 8px;
 }
-.team-title { font-size: 12px; font-weight: 700; color: var(--muted); padding: 10px 16px 0; }
+.team-title { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--muted); padding: 10px 16px 0; }
+.team-title .logo { width: 18px; height: 18px; }
 
 .row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
 .row .lbl { width: 54px; flex: none; color: var(--muted); font-size: 11px; font-weight: 700; }
@@ -118,9 +126,17 @@ header {
 .player { padding: 10px 16px; border-top: 1px solid var(--line); }
 .player:first-of-type { border-top: 0; }
 .player .name {
-  display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px;
   font-weight: 650; font-size: 14px; margin-bottom: 2px;
 }
+.player .name .headshot { margin-right: -4px; }
+/* ESPN headshots are wider than tall; the circle keeps the face (top middle) */
+.headshot {
+  display: inline-block; width: 36px; height: 36px; flex: none; border-radius: 50%;
+  overflow: hidden; background: var(--chip); vertical-align: middle;
+}
+.headshot img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+.tooltip .tt .headshot { width: 28px; height: 28px; margin-right: 8px; }
 .pstats {
   display: inline-flex; flex-wrap: wrap; gap: 2px 10px; font-size: 12px; font-weight: 500;
   color: var(--muted); font-variant-numeric: tabular-nums;
@@ -359,9 +375,12 @@ html:has(body[data-view="bets"]), body[data-view="bets"] { overflow-anchor: none
 .p-counts .dead { color: var(--danger); }
 .p-counts .use-slip {
   margin-left: auto; height: 19px; padding: 0 8px; border-radius: 6px; font-size: 11px; font-weight: 600;
-  background: var(--chip); color: var(--text);
+  --c: 127, 176, 255; background: rgba(var(--c), .14); color: rgb(var(--c));
 }
-.p-counts .use-slip:hover { background: var(--chip-hover); }
+.p-counts .use-slip:hover { background: rgba(var(--c), .26); }
+/* Each action its own color: Use in slip blue, Cash out green (money back), Add more purple */
+.p-counts .use-slip[data-cashout] { --c: 46, 204, 113; }
+.p-counts .use-slip[data-add] { --c: 188, 140, 255; }
 .p-counts .use-slip ~ .use-slip { margin-left: 0; }
 
 .p-legs { padding: 2px 8px 6px; }

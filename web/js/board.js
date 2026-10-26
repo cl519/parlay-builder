@@ -1,7 +1,7 @@
 // The game list: full render when the set of markets changes, in-place patch for everything else
 // (prices, live stats, scores) so scroll positions, momentum and tooltips are never disturbed.
 
-import { esc, gameLabel, handicap, teamName, tipTime } from "./format.js";
+import { esc, handicap, headshotHTML, logoHTML, teamName, tipTime } from "./format.js";
 import { chipState, liveGame, playerStats, statusKind } from "./markets.js";
 import { STATS, allLegs, pickCount, state, visibleGames } from "./state.js";
 
@@ -45,9 +45,10 @@ function statLineHTML(gameKey, name) {
     + `${stat(ps.STL, "STL")}${stat(ps.BLK, "BLK")}<span class="min">${ps.MIN}m</span></span>`;
 }
 
+// Only the count changes after a tap, so the logos aren't redrawn.
 function navItemHTML(g) {
-  const n = pickCount(g.key);
-  return `${gameLabel(g)}<span class="t">${tipTime(g)}</span>${n ? `<span class="n">${n}</span>` : ""}`;
+  return `${logoHTML(g.away)}${esc(g.away)} @ ${logoHTML(g.home)}${esc(g.home)}`
+    + `<span class="t">${tipTime(g)}</span><span class="n">${pickCount(g.key) || ""}</span>`;
 }
 
 function spreadHTML(g) {
@@ -73,13 +74,14 @@ function playersHTML(g) {
   for (const p of g.players) {
     if (p.team !== team) {
       team = p.team;
-      html += `<div class="team-title">${esc(teamName(team))}</div>`;
+      html += `<div class="team-title">${logoHTML(team)}${esc(teamName(team))}</div>`;
     }
     const rows = STATS.filter((s) => p[s].length).map((s) => {
       const group = `p|${g.key}|${p.name}|${s}`;
       return chipRow(s, group, p[s].map((l) => chipHTML(l, group, `${l.line}+`)).join(""));
     }).join("");
-    html += `<div class="player"><div class="name"><span class="pname" data-team="${esc(p.team)}">${esc(p.name)}</span>`
+    html += `<div class="player"><div class="name">${headshotHTML(p.team, p.name)}`
+      + `<span class="pname" data-team="${esc(p.team)}">${esc(p.name)}</span>`
       + `<span data-pl="${esc(`${g.key}|${p.name}`)}">${statLineHTML(g.key, p.name)}</span></div>${rows}</div>`;
   }
   return html || '<div class="empty">No player props listed</div>';
@@ -90,7 +92,7 @@ function gameHTML(g) {
   return `
     <section class="game" id="g-${esc(g.key)}">
       <div class="game-head">
-        <h2>${esc(teamName(g.away))} @ ${esc(teamName(g.home))}</h2>
+        <h2>${logoHTML(g.away)}${esc(teamName(g.away))} <span class="at">@</span> ${logoHTML(g.home)}${esc(teamName(g.home))}</h2>
         <span class="tipoff">${g.start ? "Tip " + tipTime(g) : ""}</span>
         <span class="headlive" data-hk="${esc(g.key)}">${headLiveHTML(g)}</span>
         <span class="count">${n ? n + " picked" : ""}</span>
@@ -176,7 +178,8 @@ export function syncGroup(group) {
 export function updatePickCounts() {
   const links = $("nav").querySelectorAll("a");
   visibleGames().forEach((g, i) => {
-    if (links[i]) links[i].innerHTML = navItemHTML(g);
+    const count = links[i]?.querySelector(".n");
+    if (count) count.textContent = pickCount(g.key) || "";
     const head = document.querySelector(`#g-${g.key} .count`);
     if (head) {
       const n = pickCount(g.key);

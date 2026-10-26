@@ -8,6 +8,7 @@ GET  /static/...      page assets from web/
 GET  /api/games       per-game menus from Kalshi's public market data
 GET  /api/live        live scores + player box scores (ESPN), keyed by Kalshi player name
 GET  /api/player      ?team=PHI&name=...: last 5 games + season averages (ESPN), for the hover card
+GET  /api/headshot    ?team=PHI&name=...: redirects to the player's ESPN photo (404 if none)
 GET  /api/balance     cash you can spend on parlays (private: needs the token)
 GET  /api/bets        your open parlays with per-leg chances (private: needs the token)
 POST /api/move-funds  move all cash onto the parlay shard (stays in your account)
@@ -36,7 +37,7 @@ from bets import bets_payload
 from config import PORT
 from live_stats import live_payload
 from menus import games_payload
-from player_log import player_payload
+from player_log import headshot_url, player_payload
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WEB = os.path.realpath(os.path.join(HERE, "..", "web"))
@@ -79,6 +80,15 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _redirect(self, url):
+        """To an image elsewhere; the browser may remember it for a day (rosters rarely change)."""
+        if not url:
+            return self._send(404, {"error": "no photo"})
+        self.send_response(302)
+        self.send_header("Location", url)
+        self.send_header("Cache-Control", "max-age=86400")
+        self.end_headers()
+
     def _trusted(self):
         """Only our own page, loaded from localhost, may POST."""
         if self.headers.get("Host") not in ALLOWED_HOSTS:
@@ -110,9 +120,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, games_payload(force="refresh" in self.path))
             if path == "/api/live":
                 return self._send(200, live_payload())
-            if path == "/api/player":
+            if path in ("/api/player", "/api/headshot"):
                 q = parse_qs(urlsplit(self.path).query)
-                return self._send(200, player_payload(q.get("team", [""])[0], q.get("name", [""])[0]))
+                team, name = q.get("team", [""])[0], q.get("name", [""])[0]
+                if path == "/api/player":
+                    return self._send(200, player_payload(team, name))
+                return self._redirect(headshot_url(team, name))
             if path == "/api/balance":
                 if not self._trusted():
                     return self._send(403, {"error": "forbidden"})

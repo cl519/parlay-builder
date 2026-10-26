@@ -37,6 +37,8 @@ class ParseLogTest(unittest.TestCase):
         self.assertEqual((first["opp"], first["at"], first["result"], first["3PM"], first["STL"]), ("BOS", True, "L", 1, 3))
         self.assertEqual(out["avg"]["PTS"], 15.5)
         self.assertEqual(out["avg"]["3PM"], 1.5)
+        self.assertEqual((first["FGM"], first["FGA"], first["3PA"]), (5, 10, 4))
+        self.assertEqual(out["avg"]["3PA"], 3.5)
 
     def test_skips_preseason_and_unfinished_games_and_keeps_five(self):
         rows = [row(str(i), 30, "0-0", 5, 5, 0, 0, 10 + i) for i in range(7)]
