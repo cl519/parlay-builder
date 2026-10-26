@@ -24,7 +24,7 @@ function chipRow(label, rowKey, chips, extraClass = "") {
     + `<div class="chips ${extraClass}" data-k="${esc(rowKey)}">${chips}</div></div>`;
 }
 
-// ---------- Each player's recent games, under their photo ----------
+// ---------- Each player's recent games, beside their photo ----------
 // The hover card's table (last 5 games + season average), loaded as a player scrolls near the
 // screen and kept for the session (the server refreshes its copy every 10 minutes).
 
@@ -107,10 +107,11 @@ function playersHTML(g) {
       const group = `p|${g.key}|${p.name}|${s}`;
       return chipRow(s, group, p[s].map((l) => chipHTML(l, group, `${l.line}+`)).join(""));
     }).join("");
-    html += `<div class="player" data-log="${esc(key)}">`
-      + `<div class="pside">${headshotHTML(p.team, p.name, "portrait")}<div class="plog">${logs[key] ? logTableHTML(logs[key], true) : ""}</div></div>`
-      + `<div class="pbody"><div class="name"><span class="pname" data-team="${esc(p.team)}">${esc(p.name)}</span>`
-      + `<span data-pl="${esc(`${g.key}|${p.name}`)}">${statLineHTML(g.key, p.name)}</span></div>${rows}</div></div>`;
+    // Header band (photo beside name + box score, same height), then the prop rows full width
+    html += `<div class="player" data-log="${esc(key)}"><div class="phead">${headshotHTML(p.team, p.name, "portrait")}`
+      + `<div class="pinfo"><div class="name"><span class="pname" data-team="${esc(p.team)}">${esc(p.name)}</span>`
+      + `<span data-pl="${esc(`${g.key}|${p.name}`)}">${statLineHTML(g.key, p.name)}</span></div>`
+      + `<div class="plog">${logs[key] ? logTableHTML(logs[key], true) : ""}</div></div></div>${rows}</div>`;
   }
   return html || '<div class="empty">No player props listed</div>';
 }
