@@ -42,7 +42,5 @@ raise legs and rebuy, add more, or cash out.
 | `./parlay update` | Get the latest version |
 | `./parlay setup` | Change your API key |
 
-Bets use real money. Nothing is charged until you press Confirm.
-
 `app/kalshi.py` started from [yakub268/kalshi-mcp](https://github.com/yakub268/kalshi-mcp) (MIT).
 Not affiliated with Kalshi or ESPN.
