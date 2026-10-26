@@ -62,19 +62,28 @@ function chipHTML(chip) {
   return html;
 }
 
-function playerLogHTML(rawName, team, log) {
-  const name = headshotHTML(team, rawName) + esc(rawName);
-  if (log.missing) return `<div class="tt">${name}</div><div class="muted">Not found on ESPN's roster.</div>`;
-  if (!log.played) return `<div class="tt">${name}</div><div class="muted">No regular-season games yet.</div>`;
+/**
+ * A player's last 5 games and season average as a table: the hover card, and (compact: no dates,
+ * shorter labels) under each player's photo on Build.
+ */
+export function logTableHTML(log, compact = false) {
+  if (log.missing) return `<div class="muted">Not found on ESPN's roster.</div>`;
+  if (!log.played) return `<div class="muted">No regular-season games yet.</div>`;
   const day = (iso) => new Date(iso).toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
-  const rows = log.games.map((g) => `<tr><td class="d">${day(g.date)}</td>`
+  const rows = log.games.map((g) => `<tr>${compact ? "" : `<td class="d">${day(g.date)}</td>`}`
     + `<td class="d">${g.at ? "@" : "vs"} ${esc(g.opp)} <i class="${g.result === "W" ? "w" : "l"}">${esc(g.result)}</i></td>`
     + `${statCells(g, String)}</tr>`).join("");
-  const label = log.played === 1 ? "Only game" : log.played <= 5 ? `All ${log.played} games` : "Last 5";
-  return `<div class="tt">${name} <span class="muted">· ${label}</span></div><table class="log">`
-    + `<tr><th></th><th></th>${LOG_STATS.map(headCell).join("")}</tr>${rows}`
-    + `<tr class="avg"><td colspan="2">Season avg <span class="muted">(${log.played} GP)</span></td>`
+  const lead = compact ? 1 : 2;  // label columns before the stats
+  return `<table class="log"><tr>${"<th></th>".repeat(lead)}${LOG_STATS.map(headCell).join("")}</tr>${rows}`
+    + `<tr class="avg"><td colspan="${lead}">${compact ? "Avg" : `Season avg <span class="muted">(${log.played} GP)</span>`}</td>`
     + `${statCells(log.avg, (x) => x.toFixed(1))}</tr></table>`;
+}
+
+const logLabel = (log) => (!log.played ? "" : log.played === 1 ? " · Only game" : log.played <= 5 ? ` · All ${log.played} games` : " · Last 5");
+
+function playerLogHTML(rawName, team, log) {
+  return `<div class="tt">${headshotHTML(team, rawName)}${esc(rawName)} <span class="muted">${logLabel(log)}</span></div>`
+    + logTableHTML(log);
 }
 
 async function showPlayer(target) {
