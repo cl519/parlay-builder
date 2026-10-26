@@ -2,11 +2,12 @@
 
 ![Parlay Builder](docs/screenshot.png)
 
-Build, place and track NBA parlays on [Kalshi](https://kalshi.com), with live player stats on every leg.
+A lightweight web app that connects to your [Kalshi](https://kalshi.com) account to build and
+place NBA parlays, with live player stats on every leg.
 
-**Build:** tap lines from every game into a slip, see its live price, and place it.
-
-**My bets:** follow your open parlays leg by leg, swap or raise legs and rebuy, add more, or cash out.
+It has two tabs. **Build** lets you browse every game's lines, tap them into a slip, and place it
+at a live price. **My bets** lets you manage your open parlays: follow each leg live, swap or
+raise legs and rebuy, add more, or cash out.
 
 ## Setup
 
