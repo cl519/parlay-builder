@@ -1,7 +1,7 @@
 // The game list: full render when the set of markets changes, in-place patch for everything else
 // (prices, live stats, scores) so scroll positions, momentum and tooltips are never disturbed.
 
-import { gameLabel, handicap, teamName, tipTime } from "./format.js";
+import { esc, gameLabel, handicap, teamName, tipTime } from "./format.js";
 import { chipState, liveGame, playerStats, statusKind } from "./markets.js";
 import { STATS, allLegs, pickCount, state, visibleGames } from "./state.js";
 
@@ -13,23 +13,23 @@ let renderedSig = "";
 function chipHTML(leg, group, label, extraClass = "") {
   const s = chipState(state.byTicker[leg.ticker], group);
   const cls = ["chip", s.on && "on", s.thin && "thin", s.hit && "hit", extraClass].filter(Boolean).join(" ");
-  return `<button class="${cls}" ${s.disabled ? "disabled" : ""} data-t="${leg.ticker}" data-g="${group}">`
-    + `<span class="ln">${label}</span><span class="px">${s.price}</span></button>`;
+  return `<button class="${cls}" ${s.disabled ? "disabled" : ""} data-t="${esc(leg.ticker)}" data-g="${esc(group)}">`
+    + `<span class="ln">${esc(label)}</span><span class="px">${s.price}</span></button>`;
 }
 
 function chipRow(label, rowKey, chips, extraClass = "") {
-  return `<div class="row"><span class="lbl">${label}</span>`
-    + `<div class="chips ${extraClass}" data-k="${rowKey}">${chips}</div></div>`;
+  return `<div class="row"><span class="lbl">${esc(label)}</span>`
+    + `<div class="chips ${extraClass}" data-k="${esc(rowKey)}">${chips}</div></div>`;
 }
 
 function headLiveHTML(g) {
   const kind = statusKind(g.status);
   const badge = kind === "live" ? '<span class="badge-live">LIVE</span>'
     : kind === "final" ? '<span class="badge-final">Final</span>'
-    : kind === "other" ? `<span class="badge-final">${g.status}</span>` : "";
+    : kind === "other" ? `<span class="badge-final">${esc(g.status)}</span>` : "";
   const L = liveGame(g.key);
   const score = L
-    ? `<span class="score"><b>${g.away} ${L.away_score}</b> – <b>${L.home_score} ${g.home}</b> · ${L.detail}</span>`
+    ? `<span class="score"><b>${esc(g.away)} ${esc(L.away_score)}</b> – <b>${esc(L.home_score)} ${esc(g.home)}</b> · ${esc(L.detail)}</span>`
     : "";
   return badge + score;
 }
@@ -73,14 +73,14 @@ function playersHTML(g) {
   for (const p of g.players) {
     if (p.team !== team) {
       team = p.team;
-      html += `<div class="team-title">${teamName(team)}</div>`;
+      html += `<div class="team-title">${esc(teamName(team))}</div>`;
     }
     const rows = STATS.filter((s) => p[s].length).map((s) => {
       const group = `p|${g.key}|${p.name}|${s}`;
       return chipRow(s, group, p[s].map((l) => chipHTML(l, group, `${l.line}+`)).join(""));
     }).join("");
-    html += `<div class="player"><div class="name"><span class="pname" data-team="${p.team}">${p.name}</span>`
-      + `<span data-pl="${g.key}|${p.name}">${statLineHTML(g.key, p.name)}</span></div>${rows}</div>`;
+    html += `<div class="player"><div class="name"><span class="pname" data-team="${esc(p.team)}">${esc(p.name)}</span>`
+      + `<span data-pl="${esc(`${g.key}|${p.name}`)}">${statLineHTML(g.key, p.name)}</span></div>${rows}</div>`;
   }
   return html || '<div class="empty">No player props listed</div>';
 }
@@ -88,15 +88,15 @@ function playersHTML(g) {
 function gameHTML(g) {
   const n = pickCount(g.key);
   return `
-    <section class="game" id="g-${g.key}">
+    <section class="game" id="g-${esc(g.key)}">
       <div class="game-head">
-        <h2>${teamName(g.away)} @ ${teamName(g.home)}</h2>
+        <h2>${esc(teamName(g.away))} @ ${esc(teamName(g.home))}</h2>
         <span class="tipoff">${g.start ? "Tip " + tipTime(g) : ""}</span>
-        <span class="headlive" data-hk="${g.key}">${headLiveHTML(g)}</span>
+        <span class="headlive" data-hk="${esc(g.key)}">${headLiveHTML(g)}</span>
         <span class="count">${n ? n + " picked" : ""}</span>
       </div>
       <div class="section"><div class="section-title">Moneyline</div>
-        <div class="chips ml" data-k="ml|${g.key}">${g.ml.map((l) => chipHTML(l, `ml|${g.key}`, `${l.team} ML`)).join("")}</div></div>
+        <div class="chips ml" data-k="${esc(`ml|${g.key}`)}">${g.ml.map((l) => chipHTML(l, `ml|${g.key}`, `${l.team} ML`)).join("")}</div></div>
       <div class="section"><div class="section-title">Spread</div>${spreadHTML(g)}</div>
       <div class="section"><div class="section-title">Game total</div>${totalsHTML(g)}</div>
       <div class="section flush">${playersHTML(g)}</div>

@@ -2,7 +2,7 @@
 
 import { getJSON } from "./api.js";
 import { renderBoard, refreshBoard, renderDays, syncGroup } from "./board.js";
-import { dayLabel } from "./format.js";
+import { dayLabel, esc } from "./format.js";
 import { startPlaceBet } from "./place.js";
 import { installBalance } from "./balance.js";
 import { installBets, refreshBetsProgress, showBets } from "./bets.js";
@@ -29,7 +29,7 @@ async function loadMenus(force = false) {
     $("updated").textContent = "Prices as of " + new Date(data.updated).toLocaleTimeString();
   } catch (e) {
     $("updated").textContent = "Load failed: " + e.message;
-    if (!state.games.length) $("games").innerHTML = `<div class="loading">Couldn't load games: ${e.message}</div>`;
+    if (!state.games.length) $("games").innerHTML = `<div class="loading">Couldn't load games: ${esc(e.message)}</div>`;
   }
 }
 

@@ -133,7 +133,7 @@ node --test web/js/tests/*.test.js                 # page logic (needs Node)
 To try a change without touching your real slip, run a second copy on another port
 (`PARLAY_PORT=8788 .venv/bin/python server.py`). It uses your real key, so don't confirm bets on it.
 
-Known: names from Kalshi/ESPN are put into the page without escaping.
+Text from Kalshi or ESPN is escaped where it's put into the page (`esc` in `format.js`).
 
 ## Credits
 

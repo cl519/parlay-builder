@@ -2,6 +2,7 @@
 // and a player's last 5 games + season averages on their name.
 
 import { getJSON } from "./api.js";
+import { esc } from "./format.js";
 import { state } from "./state.js";
 
 const LEGEND_TEXT = '<div class="tt">Thin market</div>Few trades on this line, so the bid and ask are 10¢+ apart '
@@ -43,7 +44,7 @@ function chipHTML(chip) {
   const hasAsk = ask != null && ask > 0 && ask < 100;
   const hasBid = bid != null && bid > 0;
   const row = (k, v) => `<span>${k}</span><span>${v}</span>`;
-  let html = `<div class="tt">${leg.label}</div><div class="grid">`
+  let html = `<div class="tt">${esc(leg.label)}</div><div class="grid">`
     + row("Ask (you buy at)", hasAsk ? `${ask}¢` : "none")
     + row("Bid", hasBid ? `${bid}¢` : "none")
     + (hasAsk && hasBid ? row("Midpoint", `~${Math.round((bid + ask) / 2)}¢`) : "")
@@ -55,13 +56,14 @@ function chipHTML(chip) {
   return html;
 }
 
-function playerLogHTML(name, log) {
+function playerLogHTML(rawName, log) {
+  const name = esc(rawName);
   if (log.missing) return `<div class="tt">${name}</div><div class="muted">Not found on ESPN's roster.</div>`;
   if (!log.played) return `<div class="tt">${name}</div><div class="muted">No regular-season games yet.</div>`;
-  const cells = (xs) => xs.map((x) => `<td>${x}</td>`).join("");
+  const cells = (xs) => xs.map((x) => `<td>${esc(x)}</td>`).join("");
   const day = (iso) => new Date(iso).toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
   const rows = log.games.map((g) => `<tr><td class="d">${day(g.date)}</td>`
-    + `<td class="d">${g.at ? "@" : "vs"} ${g.opp} <i class="${g.result === "W" ? "w" : "l"}">${g.result}</i></td>`
+    + `<td class="d">${g.at ? "@" : "vs"} ${esc(g.opp)} <i class="${g.result === "W" ? "w" : "l"}">${esc(g.result)}</i></td>`
     + `${cells(LOG_STATS.map((s) => g[s]))}</tr>`).join("");
   const label = log.played === 1 ? "Only game" : log.played <= 5 ? `All ${log.played} games` : "Last 5";
   return `<div class="tt">${name} <span class="muted">· ${label}</span></div><table class="log">`
@@ -73,13 +75,13 @@ function playerLogHTML(name, log) {
 async function showPlayer(target) {
   const name = target.textContent;
   current = target;
-  show(target, `<div class="tt">${name}</div><div class="muted">Loading recent games…</div>`);
+  show(target, `<div class="tt">${esc(name)}</div><div class="muted">Loading recent games…</div>`);
   let html;
   try {
     const q = new URLSearchParams({ team: target.dataset.team, name });
     html = playerLogHTML(name, await getJSON(`/api/player?${q}`));
   } catch (e) {
-    html = `<div class="tt">${name}</div><div class="muted">Couldn't load games: ${e.message}</div>`;
+    html = `<div class="tt">${esc(name)}</div><div class="muted">Couldn't load games: ${esc(e.message)}</div>`;
   }
   if (current === target) show(target, html);  // still hovering this name
 }

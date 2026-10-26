@@ -1,4 +1,4 @@
-// Run from slip/: node --test "web/js/tests/*.test.js"
+// Run from the repo root: node --test web/js/tests/*.test.js
 
 import assert from "node:assert/strict";
 import { test } from "node:test";

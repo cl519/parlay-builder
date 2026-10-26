@@ -8,7 +8,7 @@
 
 import { getJSON } from "./api.js";
 import { refreshBoard } from "./board.js";
-import { percent, tipTime, usd } from "./format.js";
+import { esc, percent, tipTime, usd } from "./format.js";
 import { chipState, liveGame, playerOut, playerStats, statValue } from "./markets.js";
 import { belowScreen, patch, placeInColumns } from "./columns.js";
 import { columnCount, matchCards, stickyOrder } from "./order.js";
@@ -197,9 +197,9 @@ function adjustedLabel(leg, target) {
 
 /** Mark the player's name so hovering it shows their recent games, as on Build (tooltip.js). */
 function withPlayer(leg, text) {
-  if (!leg.player || !leg.team || !text.startsWith(leg.player)) return text;
+  if (!leg.player || !leg.team || !text.startsWith(leg.player)) return esc(text);
   // title="" keeps the row's "Tap to…" hint from popping up on top of the stats card
-  return `<span class="pname" data-team="${leg.team}" title="">${leg.player}</span>${text.slice(leg.player.length)}`;
+  return `<span class="pname" data-team="${esc(leg.team)}" title="">${esc(leg.player)}</span>${esc(text.slice(leg.player.length))}`;
 }
 
 const targetOf = (p, leg) => {
@@ -237,7 +237,7 @@ function legHTML(p, leg) {
   const hint = !editable ? (lines.length ? "Already hit: tap to pick a higher line for a new parlay" : "")
     : lines.length ? "Tap to change the line or drop this leg" : "Tap to drop this leg";
   return `<div class="${cls}" id="leg-${p.ticker}-${leg.ticker}" data-p="${p.ticker}" data-leg="${leg.ticker}" ${lines.length ? "data-lines" : ""} title="${hint}">
-    <div class="bl-main"><span class="bl-label">${withPlayer(leg, target ? adjustedLabel(leg, target) : leg.label)}</span><span class="bl-sub" data-prog>${pr.text}</span></div>
+    <div class="bl-main"><span class="bl-label">${withPlayer(leg, target ? adjustedLabel(leg, target) : leg.label)}</span><span class="bl-sub" data-prog>${esc(pr.text)}</span></div>
     ${track}${oddsHTML(leg, target)}${editable ? `<button class="bl-x" data-drop="${p.ticker}" data-leg="${leg.ticker}" title="${isDropped ? "Keep" : "Drop"} this leg">${isDropped ? "↺" : "✕"}</button>` : "<span></span>"}
   </div>${isEditing ? lineEditorHTML(p, leg, lines) : ""}`;
 }
@@ -366,7 +366,7 @@ function stackRowHTML(m, top) {
   return `<button class="kid ${toneClass(m, s)}" id="kid-${m.ticker}" data-kid="${m.ticker}">
       <span class="kid-arrow">${isOpenKid ? "▾" : "▸"}</span>
       <span class="kid-main"><b>${m.legs.length}-leg ${rel.name}</b> · ${usd(m.cost)} → ${usd(m.payout)}
-        <span class="kid-sub">${rel.text}</span></span>
+        <span class="kid-sub">${esc(rel.text)}</span></span>
       <span class="kid-odds">${s.atRisk ? `<span class="c risk">⚠ ${s.atRisk}</span>` : ""}${chanceHTML(m, s.dead.length)}</span>
     </button>
     ${isOpenKid ? `<div class="kid-card">${parlayHTML(m, "In this stack")}</div>` : ""}`;
@@ -686,7 +686,7 @@ async function load(force = false, relayout = false) {
   try {
     data = await getJSON("/api/bets" + (force ? "?refresh=1" : ""), { private: true });
   } catch (e) {
-    if (!data) $("bets").innerHTML = `<div class="loading">Couldn't load your parlays: ${e.message}</div>`;
+    if (!data) $("bets").innerHTML = `<div class="loading">Couldn't load your parlays: ${esc(e.message)}</div>`;
     return;
   }
   loadedAt = Date.now();

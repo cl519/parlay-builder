@@ -9,7 +9,12 @@ const TEAM = {
 };
 
 export const teamName = (code) => TEAM[code] || code;
-export const gameLabel = (g) => `${g.away} @ ${g.home}`;
+
+// Text from Kalshi or ESPN, made safe to put inside HTML (and attribute values). Applied where
+// it's inserted, not on arrival: names stay as-is for matching (De'Aaron Fox vs ESPN's box score).
+const ENTITIES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ENTITIES[c]);
+export const gameLabel = (g) => `${esc(g.away)} @ ${esc(g.home)}`;
 export const usd = (x) => "$" + Number(x).toFixed(2);
 export const cents = (c) => (c == null ? "–" : `${c}¢`);
 export const percent = (p, digits = 1) => (p * 100).toFixed(digits);

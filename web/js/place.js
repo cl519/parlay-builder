@@ -3,7 +3,7 @@
 
 import { post, postOnExit } from "./api.js";
 import { refreshBalance } from "./balance.js";
-import { percent, usd } from "./format.js";
+import { esc, percent, usd } from "./format.js";
 
 const $ = (id) => document.getElementById(id);
 let pendingBet = null;
@@ -41,7 +41,7 @@ const cancelAction = { label: "Cancel", onClick: () => { cancelPending(); closeM
 const closeAction = { label: "Close", onClick: closeModal };
 
 function showError(title, message) {
-  showModal(title, `<div class="note err">${message}</div>`, [closeAction]);
+  showModal(title, `<div class="note err">${esc(message)}</div>`, [closeAction]);  // messages carry Kalshi's own text
 }
 
 /**
@@ -72,7 +72,7 @@ export async function startPlaceBet(legs, amount, onPlaced, { canKeep = false } 
     ? "Buys at these prices or better. If someone buys first, you get fewer contracts and pay less; never a higher price."
     : "Quote held for 2 minutes. You'll get exactly this price or nothing.";
   showModal(q.single ? "Confirm single bet" : "Confirm bet",
-    (q.single ? row("Bet", legs[0].label || legs[0].ticker) : row("Legs", q.legs))
+    (q.single ? row("Bet", esc(legs[0].label || legs[0].ticker)) : row("Legs", q.legs))
     + row("Price per contract", `${percent(q.price)}¢`)
     + `<div class="note right">${priceNote}</div>`
     + row("Contracts", q.contracts.toFixed(2))
@@ -108,7 +108,7 @@ async function confirm(legs, amount, onPlaced, canKeep) {
   } catch (e) {
     if (e.data?.retry) {
       // The held price vanished (maker pulled it, or another app on your account replaced it)
-      showModal("Price expired", `<div class="note">${e.message} Prices move fast during live games.</div>`,
+      showModal("Price expired", `<div class="note">${esc(e.message)} Prices move fast during live games.</div>`,
         [closeAction, { label: "Get new price", primary: true, onClick: () => startPlaceBet(legs, amount, onPlaced, { canKeep }) }]);
     } else {
       showError("Not placed", e.message);
@@ -167,7 +167,7 @@ async function confirmCashOut(p, onSold) {
     }
   } catch (e) {
     if (e.data?.retry) {
-      showModal("Offer expired", `<div class="note">${e.message} Offers move fast during live games.</div>`,
+      showModal("Offer expired", `<div class="note">${esc(e.message)} Offers move fast during live games.</div>`,
         [closeAction, { label: "Get new offer", primary: true, onClick: () => startCashOut(p, onSold) }]);
     } else {
       showError("Not sold", e.message);

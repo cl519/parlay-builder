@@ -2,7 +2,7 @@
 // about a second after the slip stops changing.
 
 import { post } from "./api.js";
-import { cents, gameLabel, percent, usd } from "./format.js";
+import { cents, esc, gameLabel, percent, usd } from "./format.js";
 import { legProgress } from "./markets.js";
 import { pickedLegs, state } from "./state.js";
 
@@ -69,10 +69,10 @@ export function renderSlip() {
       if (leg.game !== currentGame) {
         currentGame = leg.game;
         const g = state.games.find((x) => x.key === currentGame);
-        html += `<div class="leg-game">${g ? gameLabel(g) : currentGame}</div>`;
+        html += `<div class="leg-game">${g ? gameLabel(g) : esc(currentGame)}</div>`;
       }
-      html += `<div class="leg"><span class="t">${leg.label}${progressHTML(leg)}</span>`
-        + `<span class="p">${cents(leg.ask)}</span><button data-rm="${group}" title="Remove">×</button></div>`;
+      html += `<div class="leg"><span class="t">${esc(leg.label)}${progressHTML(leg)}</span>`
+        + `<span class="p">${cents(leg.ask)}</span><button data-rm="${esc(group)}" title="Remove">×</button></div>`;
     }
     $("legs").innerHTML = html;
   }
