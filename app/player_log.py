@@ -23,6 +23,7 @@ HEADSHOT = "https://a.espncdn.com/i/headshots/nba/players/full/{}.png"  # ESPN's
 
 _rosters = {}  # Kalshi team code -> (fetched at, {normalized name: athlete id})
 _photos = set()  # athlete ids ESPN has a headshot for
+_positions = {}  # athlete id -> "G" / "F" / "C" (ESPN only has these three)
 _logs = {}     # athlete id -> (fetched at, payload)
 _lock = threading.Lock()
 
@@ -48,6 +49,7 @@ def _roster(team):
     with _lock:
         _rosters[team] = (time.time(), roster)
         _photos.update(a["id"] for a in athletes if a.get("headshot"))
+        _positions.update({a["id"]: a.get("position", {}).get("abbreviation") for a in athletes})
     return roster
 
 
@@ -99,12 +101,13 @@ def player_payload(team, name):
         return {"games": [], "avg": None, "played": 0, "missing": True}
     with _lock:
         cached = _logs.get(athlete)
+        pos = _positions.get(athlete)
     if cached and time.time() - cached[0] < LOG_SECONDS:
-        return cached[1]
+        return {**cached[1], "pos": pos}
     payload = parse_log(get_json(f"{ATHLETE_BASE}/{athlete}/gamelog"))
     with _lock:
         _logs[athlete] = (time.time(), payload)
-    return payload
+    return {**payload, "pos": pos}
 
 
 def headshot_url(team, name):

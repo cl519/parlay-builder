@@ -30,8 +30,12 @@ function chipRow(label, rowKey, chips, extraClass = "") {
 
 const logs = {};  // "team|name" -> game log, once loaded
 
+// The box score is right there on Build, so the name has no hover card here (it does on My bets)
+const posHTML = (log) => (log?.pos ? ` · ${esc(log.pos)}` : "");
+
 function fillLog(el) {
   el.querySelector(".plog").innerHTML = logTableHTML(logs[el.dataset.log], true);
+  el.querySelector(".ppos").innerHTML = posHTML(logs[el.dataset.log]);
 }
 
 const loader = new IntersectionObserver((entries) => {
@@ -109,7 +113,7 @@ function playersHTML(g) {
     }).join("");
     // Header band (photo beside name + box score, same height), then the prop rows full width
     html += `<div class="player" data-log="${esc(key)}"><div class="phead">${headshotHTML(p.team, p.name, "portrait")}`
-      + `<div class="pinfo"><div class="name"><span class="pname" data-team="${esc(p.team)}">${esc(p.name)}</span>`
+      + `<div class="pinfo"><div class="name"><span>${esc(p.name)}<span class="ppos">${posHTML(logs[key])}</span></span>`
       + `<span data-pl="${esc(`${g.key}|${p.name}`)}">${statLineHTML(g.key, p.name)}</span></div>`
       + `<div class="plog">${logs[key] ? logTableHTML(logs[key], true) : ""}</div></div></div>${rows}</div>`;
   }
