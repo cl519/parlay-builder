@@ -31,7 +31,7 @@ function chipRow(label, rowKey, chips, extraClass = "") {
 const logs = {};  // "team|name" -> game log, once loaded
 
 // The box score is right there on Build, so the name has no hover card here (it does on My bets)
-const posHTML = (log) => (log?.pos ? ` · ${esc(log.pos)}` : "");
+const posHTML = (log) => (log?.pos ? ` - ${esc(log.pos)}` : "");
 
 function fillLog(el) {
   el.querySelector(".plog").innerHTML = logTableHTML(logs[el.dataset.log], true);
