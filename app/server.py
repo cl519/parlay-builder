@@ -1,7 +1,7 @@
 """
 Local parlay builder for Kalshi NBA combos.
 
-    ./parlay        (or: .venv/bin/python server.py)  ->  http://127.0.0.1:8787
+    ./parlay        (or: .venv/bin/python app/server.py)  ->  http://127.0.0.1:8787
 
 GET  /                the page (with this run's token embedded)
 GET  /static/...      page assets from web/
@@ -39,7 +39,7 @@ from menus import games_payload
 from player_log import player_payload
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-WEB = os.path.realpath(os.path.join(HERE, "web"))
+WEB = os.path.realpath(os.path.join(HERE, "..", "web"))
 
 TOKEN = secrets.token_urlsafe(32)
 ALLOWED_HOSTS = {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}

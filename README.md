@@ -92,8 +92,8 @@ Your open parlays, each leg with its live stat (e.g. 13/15 PTS, 4th quarter) and
 
 ## How it works
 
-A small Python server on your Mac (`server.py`) serves the page and talks to Kalshi's API,
-signing each request with your key (`kalshi.py`). Game data comes from Kalshi's public
+A small Python server on your Mac (`app/server.py`) serves the page and talks to Kalshi's API,
+signing each request with your key (`app/kalshi.py`). Game data comes from Kalshi's public
 markets; live box scores and player game logs from ESPN's public feeds. No accounts, no
 analytics, nothing else.
 
@@ -103,7 +103,9 @@ can't trigger bets.
 
 ## For developers
 
-| Path | Job |
+Python is in `app/`, the page in `web/`.
+
+| File | Job |
 |---|---|
 | `server.py` | HTTP only: routes, security checks, static files |
 | `kalshi.py` | Kalshi API client: request signing (Ed25519 or RSA), positions, parlay quotes |
@@ -115,7 +117,6 @@ can't trigger bets.
 | `player_log.py` | A player's last 5 games + season averages for the hover card |
 | `setup_key.py` | `./parlay setup`: store and check your API key |
 | `config.py`, `net.py` | Port and quote lifetime; JSON fetch for public sources |
-| `web/` | `index.html`, `styles.css`, ES modules in `web/js/` (no build step) |
 
 Frontend: `state.js` (app state), `board.js` (game list), `slip.js` (slip + live price),
 `place.js` (confirm flow), `bets.js` (My bets), `columns.js` + `order.js` (card layout),
@@ -126,17 +127,17 @@ idiomorph, `web/js/vendor/`), and cards only move at a layout or when they're of
 Details at "Cards on the page" in `bets.js`.
 
 ```
-.venv/bin/python -m unittest discover -s tests     # Python
-node --test web/js/tests/*.test.js                 # page logic (needs Node)
+.venv/bin/python -m unittest discover -s tests -t .   # Python
+node --test web/js/tests/*.test.js                   # page logic (needs Node)
 ```
 
 To try a change without touching your real slip, run a second copy on another port
-(`PARLAY_PORT=8788 .venv/bin/python server.py`). It uses your real key, so don't confirm bets on it.
+(`PARLAY_PORT=8788 .venv/bin/python app/server.py`). It uses your real key, so don't confirm bets on it.
 
 Text from Kalshi or ESPN is escaped where it's put into the page (`esc` in `format.js`).
 
 ## Credits
 
-`kalshi.py` started from [yakub268/kalshi-mcp](https://github.com/yakub268/kalshi-mcp) (MIT,
+`app/kalshi.py` started from [yakub268/kalshi-mcp](https://github.com/yakub268/kalshi-mcp) (MIT,
 `LICENSES/kalshi-mcp.txt`). idiomorph 0.7.4 (0BSD, `web/js/vendor/idiomorph.LICENSE`).
 Not affiliated with Kalshi or ESPN.

@@ -27,13 +27,13 @@ install() {
 }
 
 stop() {
-  pkill -f "$DIR/server.py" && echo "Parlay server stopped." || echo "Parlay server wasn't running."
+  pkill -f "$DIR/app/server.py" && echo "Parlay server stopped." || echo "Parlay server wasn't running."
 }
 
 case "$1" in
   setup)
     install
-    "$VENV/bin/python" "$DIR/setup_key.py"
+    "$VENV/bin/python" "$DIR/app/setup_key.py"
     exit 0 ;;
   stop)
     stop; exit 0 ;;
@@ -55,7 +55,7 @@ if [[ ! -x "$VENV/bin/python" || ! -f "$CONFIG" ]]; then
 fi
 
 if ! curl -s -o /dev/null "$URL"; then
-  nohup "$VENV/bin/python" "$DIR/server.py" > "$LOG" 2>&1 &
+  nohup "$VENV/bin/python" "$DIR/app/server.py" > "$LOG" 2>&1 &
   for i in {1..30}; do
     curl -s -o /dev/null "$URL" && break
     sleep 0.5
