@@ -3,6 +3,8 @@
 A website that runs on your own Mac for building, placing and tracking NBA parlays on
 [Kalshi](https://kalshi.com), with live player stats next to every leg.
 
+![Build tab: every game's moneylines, spreads and totals as tappable lines, with a 4-leg bet slip and its live price](docs/screenshot.png)
+
 **This places real-money bets with your Kalshi account.** Nothing is charged until you press
 Confirm in the popup, which shows the exact price and total. There's no stake limit beyond
 your balance.
