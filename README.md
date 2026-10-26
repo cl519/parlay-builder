@@ -25,7 +25,7 @@ Mac (`~/.parlay`); it's never sent anywhere except as signatures on your own req
 Open **Terminal** (Spotlight: ⌘ Space, type Terminal) and run:
 
 ```
-git clone <repo URL> ~/parlay-builder
+git clone https://github.com/cl519/parlay-builder.git ~/parlay-builder
 cd ~/parlay-builder
 ./parlay setup
 ```
