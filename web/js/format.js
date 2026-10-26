@@ -20,7 +20,7 @@ export const logoHTML = (team) => `<img class="logo" src="${esc(logoURL(team))}"
 // The frame stays when there's no photo (showing initials), so the layout doesn't shift.
 // v: bump when the server's photo size changes (browsers keep the redirect for a day).
 export const headshotHTML = (team, name, cls = "headshot") =>
-  `<span class="${cls}" data-i="${esc(initials(name))}"><img src="/api/headshot?${esc(new URLSearchParams({ team, name, v: 2 }))}" `
+  `<span class="${cls}" data-i="${esc(initials(name))}"><img src="/api/headshot?${esc(new URLSearchParams({ team, name, v: 3 }))}" `
   + `alt="" loading="lazy" onerror="this.parentNode.classList.add('none'); this.remove()"></span>`;
 
 // Text from Kalshi or ESPN, made safe to put inside HTML (and attribute values). Applied where

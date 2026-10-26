@@ -10,7 +10,7 @@ const LEGEND_TEXT = '<div class="tt">Thin market</div>Few trades on this line, s
 const TARGETS = ".chip[data-t], #legend, .pname[data-team]";
 // Columns of the game log: a stat, or [made, tried] shown as "5/12"
 const LOG_STATS = ["MIN", "PTS", "REB", "AST", ["FG", "FGM", "FGA"], ["3PT", "3PM", "3PA"], "STL", "BLK"];
-const BOARD_ROWS = 5;  // on Build, room for 5 games (blank below if fewer), so every player is the same height
+const BOARD_ROWS = 5;  // on Build, always 5 game rows (dashes if fewer), so every player is the same height
 const headCell = (s) => `<th>${Array.isArray(s) ? s[0] : s}</th>`;
 const statCells = (row, fmt) => LOG_STATS.map((s) =>
   `<td>${esc(Array.isArray(s) ? `${fmt(row[s[1]])}/${fmt(row[s[2]])}` : fmt(row[s]))}</td>`).join("");
@@ -73,11 +73,13 @@ export function logTableHTML(log, compact = false) {
     + `<td class="d">${g.at ? "@" : "vs"} ${esc(g.opp)} <i class="${g.result === "W" ? "w" : "l"}">${esc(g.result)}</i></td>`
     + `${statCells(g, String)}</tr>`).join("");
   const lead = compact ? 1 : 2;  // label columns before the stats
-  // On Build, missing games become blank space under the average, not a hole above it
-  const blank = compact ? `<tr><td>&nbsp;</td></tr>`.repeat(BOARD_ROWS - log.games.length) : "";
-  return `<table class="log"><tr>${"<th></th>".repeat(lead)}${LOG_STATS.map(headCell).join("")}</tr>${rows}`
+  // On Build: games not played yet are rows of dashes, so the average always sits at the bottom
+  const none = `<tr class="none"><td class="d">–</td>${LOG_STATS.map(() => "<td>–</td>").join("")}</tr>`;
+  if (compact) rows += none.repeat(BOARD_ROWS - log.games.length);
+  const corner = compact ? '<th class="cap">Last 5 games</th>' : "<th></th><th></th>";
+  return `<table class="log"><tr>${corner}${LOG_STATS.map(headCell).join("")}</tr>${rows}`
     + `<tr class="avg"><td colspan="${lead}">${compact ? "Avg" : `Season avg <span class="muted">(${log.played} GP)</span>`}</td>`
-    + `${statCells(log.avg, (x) => x.toFixed(1))}</tr>${blank}</table>`;
+    + `${statCells(log.avg, (x) => x.toFixed(1))}</tr></table>`;
 }
 
 const logLabel = (log) => (!log.played ? "" : log.played === 1 ? " · Only game" : log.played <= 5 ? ` · All ${log.played} games` : " · Last 5");

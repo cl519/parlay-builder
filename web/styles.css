@@ -127,7 +127,7 @@ header {
 .player { padding: 14px 16px 10px; border-top: 1px solid var(--line); }
 .phead { display: flex; gap: 16px; margin-bottom: 12px; }
 .portrait {
-  position: relative; flex: none; width: 200px; align-self: stretch; min-height: 140px;  /* as tall as name + room for 5 games */
+  position: relative; flex: none; width: 200px; align-self: stretch; min-height: 170px;  /* as tall as name + 5 game rows */
   border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, var(--chip-hover), var(--chip));
 }
 /* Absolute, so the photo's own size never sets the band's height: the name and box score do */
@@ -135,7 +135,14 @@ header {
 .portrait img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center bottom; }
 .pinfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .plog { overflow-x: auto; scrollbar-width: none; }
-.plog .log { font-size: 12px; }  /* same as the hover card */
+/* Roomier than the hover card, to sit with the betting rows */
+.plog .log { font-size: 13px; }
+.plog .log th { padding-left: 16px; padding-bottom: 4px; }
+.plog .log td { padding: 2px 0 2px 16px; }
+.plog .log td.d { padding-left: 0; }
+.plog .log th.cap { text-align: left; padding-left: 0; font-weight: 600; letter-spacing: 0; }
+.plog .log .none td { color: var(--line); }
+.plog .log .avg td { padding-top: 5px; }
 .plog .muted { font-size: 12px; }
 @media (max-width: 600px) { .portrait { width: 96px; height: 82px; } }
 .player:first-of-type { border-top: 0; }
@@ -223,7 +230,7 @@ header {
 .log i { font-style: normal; font-size: 10px; font-weight: 700; }
 .log i.w { color: var(--accent); }
 .log i.l { color: var(--danger); }
-.log .avg td { border-top: 1px solid var(--line); padding-top: 4px; font-weight: 650; }
+.log .avg td { border-top: 1px solid var(--line); padding-top: 4px; font-weight: 600; color: var(--muted); }
 .log .avg td:first-child { text-align: left; padding-left: 0; }
 .player .pname, .bl-label .pname { cursor: help; text-decoration: underline dotted var(--muted); text-underline-offset: 3px; }
 .tooltip .grid { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font-variant-numeric: tabular-nums; }
