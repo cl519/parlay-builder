@@ -70,11 +70,12 @@ def parse_box(summary):
     return players
 
 
-def parse_out(summary):
+def parse_out(summary, final):
     """
     ESPN game summary -> {normalized name: why} for players who are out tonight: listed "Out"
-    on the injury report, or marked did-not-play in the box score. Kalshi doesn't flag this;
-    their props settle at a fair price later (result "scalar"), so the leg isn't a loss.
+    on the injury report, or, once the game is `final`, marked did-not-play in the box score
+    (mid-game ESPN marks everyone who hasn't checked in yet that way). Kalshi doesn't flag
+    this; their props settle at a fair price later (result "scalar"), so the leg isn't a loss.
     """
     out = {}
     for team in summary.get("injuries", []):
@@ -83,7 +84,7 @@ def parse_out(summary):
             if name and i.get("status") == "Out":
                 why = (i.get("details") or {}).get("type")
                 out[normalize_name(name)] = f"Out ({why.lower()})" if why else "Out"
-    for team in summary.get("boxscore", {}).get("players", []):
+    for team in summary.get("boxscore", {}).get("players", []) if final else []:
         for block in team.get("statistics", []):
             for athlete in block.get("athletes", []):
                 if athlete.get("didNotPlay"):
@@ -121,7 +122,7 @@ def _box(game):
         return cached[1]
     try:
         summary = get_json(f"{ESPN_BASE}/summary?event={espn_id}")
-        _boxes[espn_id] = (game["state"], (parse_box(summary), parse_out(summary)))
+        _boxes[espn_id] = (game["state"], (parse_box(summary), parse_out(summary, game["state"] == "post")))
     except Exception:
         pass
     return _boxes.get(espn_id, (None, ({}, {})))[1]

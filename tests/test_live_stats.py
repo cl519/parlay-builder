@@ -42,10 +42,12 @@ class ParseOutTest(unittest.TestCase):
                 {"athlete": {"displayName": "Tyrese Maxey"}, "stats": ["36"]},
             ]}]}]},
         }
-        self.assertEqual(parse_out(summary), {
+        self.assertEqual(parse_out(summary, final=True), {
             "vj edgecombe": "Out (abdomen)",                        # the injury report's reason wins
             "andre drummond": "Did not play (coach's decision)",
         })
+        # Mid-game, "did not play" only means not in yet: just the injury report counts
+        self.assertEqual(parse_out(summary, final=False), {"vj edgecombe": "Out (abdomen)"})
 
 
 if __name__ == "__main__":
