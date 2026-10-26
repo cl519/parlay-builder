@@ -22,17 +22,10 @@ Mac (`~/.parlay`); it's never sent anywhere except as signatures on your own req
 
 ### 2. Install and connect
 
-This repo is private, so first accept the collaborator invite GitHub emailed you, and log in
-to GitHub from your Mac:
-
-1. Install the **GitHub CLI** from [cli.github.com](https://cli.github.com) (the macOS download).
-2. Open **Terminal** (Spotlight: ⌘ Space, type Terminal) and run `gh auth login`. Pick
-   GitHub.com → HTTPS → Yes → Login with a web browser, and approve the code it shows.
-
-Then:
+Open **Terminal** (Spotlight: ⌘ Space, type Terminal) and run:
 
 ```
-gh repo clone cl519/parlay-builder ~/parlay-builder
+git clone https://github.com/cl519/parlay-builder.git ~/parlay-builder
 cd ~/parlay-builder
 ./parlay setup
 ```
