@@ -501,3 +501,47 @@ html:has(body[data-view="bets"]), body[data-view="bets"] { overflow-anchor: none
 .night .up b { color: var(--accent); }
 .night .down b { color: var(--danger); }
 .p-money .placed { color: var(--muted); font-size: 12px; }
+.pid { color: var(--muted); font-size: 11px; font-family: ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .02em; }
+
+/* Filter bar (filters.js): search, then pills that all apply together */
+.bets-filter { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: -4px 2px 14px; }
+.fsearch { position: relative; width: 280px; max-width: 100%; }
+.ficon { position: absolute; left: 10px; top: 9px; width: 14px; height: 14px; color: var(--muted); pointer-events: none; }
+.fsearch input {
+  width: 100%; height: 32px; padding: 0 12px 0 31px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--text); font: inherit; font-size: 13px; outline: none;
+}
+.fsearch input:focus { border-color: #4c8dff; }
+.fmenu {
+  position: absolute; top: 36px; left: 0; z-index: 20; width: 340px; max-width: calc(100vw - 32px); padding: 6px;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgba(0, 0, 0, .45);
+}
+.fmenu[hidden] { display: none; }
+.fopt { display: flex; justify-content: space-between; width: 100%; padding: 7px 10px; border-radius: 8px; text-align: left; font-size: 13px; }
+.fopt span { color: var(--muted); font-size: 12px; }
+.fopt:hover, .fopt.on { background: var(--chip-hover); }
+.fnone { padding: 8px 10px; color: var(--muted); font-size: 13px; }
+.fpick { display: flex; align-items: center; gap: 6px; padding: 4px 4px 8px; font-size: 14px; }
+.fback { width: 24px; height: 24px; border-radius: 6px; color: var(--muted); font-size: 18px; line-height: 1; }
+.fback:hover { background: var(--chip-hover); color: var(--text); }
+.frow { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; padding: 3px 4px; }
+.frow > span { width: 36px; color: var(--muted); font-size: 11px; font-weight: 700; }
+.fchip { padding: 3px 9px; border-radius: 7px; background: var(--chip); font-size: 12px; font-weight: 600; }
+.fchip small { color: var(--muted); font-weight: 500; margin-left: 2px; }
+.fchip:hover { background: var(--chip-hover); }
+.fchip.on { background: #4c8dff; color: #fff; }
+.fchip.on small { color: rgba(255, 255, 255, .75); }
+.factions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 10px 4px 4px; }
+.factions .btn { padding: 6px 14px; font-size: 13px; }
+.fpills { display: contents; }
+.fpill {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 4px 0 3px; border-radius: 999px;
+  font-size: 12px; --c: 46, 204, 113; background: rgba(var(--c), .12); border: 1px solid rgba(var(--c), .35);
+}
+.fpill.without { --c: 248, 81, 73; }
+.fpill [data-fmode] { padding: 2px 8px; border-radius: 999px; background: rgba(var(--c), .22); color: rgb(var(--c)); font-weight: 700; font-size: 11px; }
+.fpill [data-fdel] { width: 20px; height: 20px; border-radius: 50%; color: var(--muted); font-size: 11px; }
+.fpill [data-fdel]:hover { background: rgba(255, 255, 255, .08); color: var(--text); }
+.fcount { margin-left: auto; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.fclear { color: var(--text); font-size: 12px; font-weight: 600; }
+.fclear:hover { text-decoration: underline; }

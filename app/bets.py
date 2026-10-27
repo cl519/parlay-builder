@@ -122,6 +122,15 @@ def describe_leg(leg, market):
 
 def _build():
     positions = betting.open_positions()
+    # A parlay just placed can come back without its legs for a moment: look them up again,
+    # and if they're still missing leave it for the next poll rather than show a fake single
+    bare = [p["ticker"] for p in positions if not p.get("legs") and p["ticker"].startswith("KXMVE")]
+    found = _markets(bare) if bare else {}
+    for p in positions:
+        legs = (found.get(p["ticker"]) or {}).get("mve_selected_legs")
+        if legs:
+            p["legs"] = [{"market_ticker": l["market_ticker"], "side": l["side"]} for l in legs]
+    positions = [p for p in positions if p.get("legs") or not p["ticker"].startswith("KXMVE")]
     for p in positions:  # a single bet is shown as a one-leg card
         p.setdefault("legs", [{"market_ticker": p["ticker"], "side": p["side"]}])
     tickers = sorted({l["market_ticker"] for p in positions for l in p["legs"]})

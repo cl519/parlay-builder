@@ -11,6 +11,7 @@ import { refreshBoard } from "./board.js";
 import { esc, percent, tipTime, usd } from "./format.js";
 import { chipState, liveGame, playerOut, playerStats, statValue } from "./markets.js";
 import { belowScreen, patch, placeInColumns } from "./columns.js";
+import { filters, mountFilters, parlayId, passes, renderCount } from "./filters.js";
 import { columnCount, matchCards, stickyOrder } from "./order.js";
 import { startCashOut, startPlaceBet } from "./place.js";
 import { note, renderSlip } from "./slip.js";
@@ -84,7 +85,13 @@ function marginText(m) {
 /** { pct, text, center } for the progress track. `center` = the goal sits mid-track (margins). */
 function progress(leg) {
   if (leg.result === "scalar") return { pct: 0, text: `Didn't play · settled at ${Math.round((leg.settled_value ?? 0) * 100)}¢, which still pays` };
-  if (leg.result) return { pct: leg.result === leg.side ? 1 : 0, text: leg.result === leg.side ? "Hit" : "Missed" };
+  if (leg.result) {
+    // Kalshi settles a prop the moment its line is reached, mid-game: keep showing the count,
+    // so you can pick a higher line for a new parlay knowing where he's at
+    const hit = leg.result === leg.side, g = liveGame(leg.game);
+    const live = g && liveProgress(leg, g);
+    return { pct: hit ? 1 : 0, text: (hit ? "Hit" : "Missed") + (live?.stats ? ` · ${live.text}` : "") };
+  }
   const out = outReason(leg);
   if (out) return { pct: 0, text: `${out} · Kalshi settles it at a fair price, not a loss` };
   const g = liveGame(leg.game);
@@ -96,6 +103,11 @@ function progress(leg) {
     if (!upcoming) return { pct: 0, text: "Waiting for live stats" };
     return { pct: 0, text: menu.start ? `Tip ${tipTime(menu)}` : "Not started" };
   }
+  return liveProgress(leg, g);
+}
+
+/** Progress from the game's live data. `stats`: it says where the leg stands, not just the clock. */
+function liveProgress(leg, g) {
   const clock = g.state === "post" ? "Final" : g.detail;
   const away = leg.game.slice(-6, -3);
   const total = g.away_score + g.home_score;
@@ -104,22 +116,22 @@ function progress(leg) {
   switch (leg.kind) {
     case "ml": {
       const m = marginFor(leg.team);
-      return { pct: clamp01(0.5 + m / 30), text: `${leg.team} ${marginText(m)} · ${clock}`, center: true };
+      return { pct: clamp01(0.5 + m / 30), text: `${leg.team} ${marginText(m)} · ${clock}`, center: true, stats: true };
     }
     case "spread": {
       const m = marginFor(leg.team);
       const cover = m + leg.hcp;  // > 0 = covering
-      return { pct: clamp01(0.5 + cover / 30), text: `${leg.team} ${marginText(m)} · ${clock}`, center: true };
+      return { pct: clamp01(0.5 + cover / 30), text: `${leg.team} ${marginText(m)} · ${clock}`, center: true, stats: true };
     }
     case "total":
-      return { pct: clamp01(total / leg.line), text: `${total} pts · ${clock}`, under: leg.dir === "under" };
+      return { pct: clamp01(total / leg.line), text: `${total} pts · ${clock}`, under: leg.dir === "under", stats: true };
     case "other":
       return { pct: 0, text: clock };
     default: {
       const ps = playerStats(leg.game, leg.player);
       if (!ps) return { pct: 0, text: `hasn't played · ${clock}` };
       const v = statValue(ps, leg.stat);
-      return { pct: clamp01(v / leg.line), text: `${v} / ${leg.line} ${leg.stat} · ${ps.MIN}m · ${clock}` };
+      return { pct: clamp01(v / leg.line), text: `${v} / ${leg.line} ${leg.stat} · ${ps.MIN}m · ${clock}`, stats: true };
     }
   }
 }
@@ -217,9 +229,11 @@ function lineEditorHTML(p, leg, lines) {
       data-adj="${p.ticker}" data-leg="${leg.ticker}" data-to="${l.ticker}" title="${mine ? "Your current line" : ""}">
       <span class="ln">${lineText(l)}${mine ? " ·" : ""}</span><span class="px">${c.price}${c.disabled ? "" : "¢"}</span></button>`;
   }).join("");
-  const side = won(leg)  // a leg that already hit is left out of a new parlay anyway
-    ? '<span class="note" title="Left out of a new parlay unless you pick a higher line">Hit · pick higher</span>'
-    : `<button class="btn" data-drop="${p.ticker}" data-leg="${leg.ticker}">${isDropped ? "Keep leg" : "Drop leg"}</button>`;
+  // A leg that already hit is left out of a new parlay anyway. Its own line is often settled and
+  // off the board, so there's no chip to go back to: a button does it
+  const side = !won(leg) ? `<button class="btn" data-drop="${p.ticker}" data-leg="${leg.ticker}">${isDropped ? "Keep leg" : "Drop leg"}</button>`
+    : targetOf(p, leg) ? `<button class="btn" data-adj="${p.ticker}" data-leg="${leg.ticker}" data-to="${leg.buy_ticker}">Keep ${leg.player ? `${leg.line}+` : "original"}</button>`
+    : '<span class="note" title="Left out of a new parlay unless you pick a higher line">Hit · pick higher</span>';
   return `<div class="bl-edit"><div class="chips">${chips}</div>${side}</div>`;
 }
 
@@ -365,12 +379,15 @@ function stackRowHTML(m, top) {
   const isOpenKid = !!openKids[m.ticker];
   return `<button class="kid ${toneClass(m, s)}" id="kid-${m.ticker}" data-kid="${m.ticker}">
       <span class="kid-arrow">${isOpenKid ? "▾" : "▸"}</span>
-      <span class="kid-main"><b>${m.legs.length}-leg ${rel.name}</b> · ${usd(m.cost)} → ${usd(m.payout)}
+      <span class="kid-main"><b>${m.legs.length}-leg ${rel.name}</b> · ${usd(m.cost)} → ${usd(m.payout)}${idHTML(m)}
         <span class="kid-sub">${esc(rel.text)}</span></span>
       <span class="kid-odds">${s.atRisk ? `<span class="c risk">⚠ ${s.atRisk}</span>` : ""}${chanceHTML(m, s.dead.length)}</span>
     </button>
     ${isOpenKid ? `<div class="kid-card">${parlayHTML(m, "In this stack")}</div>` : ""}`;
 }
+
+/** The parlay's short ID, to find it again after a refresh (or type it in the filter). */
+const idHTML = (p) => ` · <span class="pid" title="Parlay ID: the end of its Kalshi ticker. Type it in the filter to find its stack">${esc(parlayId(p.ticker))}</span>`;
 
 /** A full card. `others` = the rest of its stack, shown as compact rows underneath. */
 function parlayHTML(p, title, others = []) {
@@ -391,7 +408,7 @@ function parlayHTML(p, title, others = []) {
     <div class="p-head">
       <div>
         <div class="p-title">${title} · ${p.single ? "single bet" : `${p.legs.length}-leg parlay`}</div>
-        <div class="p-money">${usd(p.cost)} → <b>${usd(p.payout)}</b>${p.placed ? ` · <span class="placed">placed ${placedLabel(p)}</span>` : ""}</div>
+        <div class="p-money">${usd(p.cost)} → <b>${usd(p.payout)}</b>${p.placed ? ` · <span class="placed">placed ${placedLabel(p)}</span>` : ""}${idHTML(p)}</div>
       </div>
       <div class="p-odds">${chanceHTML(p, dead.length)}</div>
     </div>
@@ -428,12 +445,12 @@ function stacks(parlays) {
 
 /**
  * The latest stacks to show: no parlays that already lost (a leg settled against you), only
- * the chosen league, best first. Stacked from every parlay first, so a hidden one in the
- * middle of a chain still links the rest.
+ * the chosen league and what the filters let through, best first. Stacked from every parlay
+ * first, so a hidden one in the middle of a chain still links the rest.
  */
 function liveStacks() {
   const { shows } = LEAGUES[league];
-  return stacks(data.parlays).map((g) => g.filter((p) => !lost(p) && shows(p))).filter((g) => g.length)
+  return stacks(data.parlays).map((g) => g.filter((p) => !lost(p) && shows(p) && passes(p, filters, g))).filter((g) => g.length)
     .sort((a, b) => compare(a[0], b[0]));
 }
 
@@ -507,9 +524,14 @@ const legOrder = {};        // parlay ticker -> its unfolded legs, shakiest firs
 /** A parlay as of the latest data, or its last known state marked `gone` once Kalshi settled it. */
 const parlayNow = (t) => byTicker.get(t) ?? (known[t] && { ...known[t], gone: true });
 
-/** Legs shown in the card (in order); the rest had hit by the last layout and fold away. */
+/**
+ * Legs shown in the card (in order); the rest had hit by the last layout and fold away. An
+ * order naming legs the parlay doesn't have is from bad data (a parlay that came back without
+ * its legs once): start it over.
+ */
 function mainLegs(p) {
   const legs = new Map(p.legs.map((l) => [l.ticker, l]));
+  if (legOrder[p.ticker]?.some((t) => !legs.has(t))) delete legOrder[p.ticker];
   legOrder[p.ticker] ??= stickyOrder(p.legs.filter((l) => !won(l)).map((l) => l.ticker), (t) => legRank(legs.get(t)));
   return legOrder[p.ticker].map((t) => legs.get(t)).filter(Boolean);
 }
@@ -542,30 +564,39 @@ function paintHead() {
   const pill = waiting ? `${waiting} new ${waiting === 1 ? "parlay" : "parlays"}` : "";
   patch(head, `<h2>My parlays</h2>${sortBarHTML()}${nightHTML()}`
     + (pill ? `<button class="bets-pill" data-relayout title="Lay the cards out again, in order">${pill} · update list</button>` : "")
-    + `<span class="note">${league === "all" ? "" : `${data.parlays.filter(LEAGUES[league].shows).length} of `}${data.parlays.length} parlays · `
+    + `<span class="note">${shownCount()}${data.parlays.length} parlays · `
     + "tap a leg to change its line or drop it, then Replace to rebuy (the original keeps riding). Parlays asking the same questions stack together</span>");
+  renderCount(filters.length ? liveStacks().flat().length : 0, data.parlays.length);
+}
+
+/** "12 of " when the league switch hides some parlays (the filter bar shows its own count). */
+function shownCount() {
+  return league === "all" ? "" : `${data.parlays.filter(LEAGUES[league].shows).length} of `;
 }
 
 /**
- * Tonight's money, from Kalshi's records (nights.py), for the league shown. Only facts: what
- * an open parlay could still pay isn't here, since most of that is long shots. Net counts
- * open parlays as $0 until they hit, so it's the floor of how tonight ends.
+ * Tonight's money, from Kalshi's records (nights.py), for the league shown, in terms you can
+ * check against your balance: what's settled (won, lost, cashed out) and what's still riding.
+ * An open bet counts for nothing either way until it's decided, like a sportsbook's history.
+ * Settled = money back + locked in - what the decided part cost (a partly cashed-out parlay
+ * counts its sold part). Settled + riding is about how far your balance moved tonight.
  */
 function nightHTML() {
   const t = data.tonight;
   if (!t) return "";
   const rows = t.rows.filter(LEAGUES[league].shows);
-  const sum = (k) => rows.reduce((s, r) => s + r[k], 0);
-  const staked = sum("staked"), paid = sum("paid"), locked = sum("locked"), net = paid + locked - staked;
-  const riding = rows.filter((r) => r.riding > 0).length;
-  const item = (amount, what, tip, cls = "") => `<span class="${cls}" title="${tip}"><b>${amount}</b> ${what}</span>`;
+  const settled = rows.reduce((s, r) => s + r.paid + r.locked - (r.staked - r.riding), 0);
+  const decided = rows.filter((r) => r.riding === 0), open = rows.filter((r) => r.riding > 0);
+  const won = decided.filter((r) => r.paid + r.locked > r.staked).length;
+  const riding = open.reduce((s, r) => s + r.riding, 0);
+  const item = (html, tip, cls = "") => `<span class="${cls}" title="${tip}">${html}</span>`;
   const day = new Date(t.night + "T12:00").toLocaleDateString([], { month: "short", day: "numeric" });
+  const sign = settled > 0.005 ? "+" : settled < -0.005 ? "−" : "";
   return `<div class="night"><span class="night-label" title="Bets on games on ${day}, counted by their last game">Tonight</span>`
-    + item(usd(staked), "staked", "Everything you paid in for tonight's games, fees included")
-    + item(usd(paid), "paid out", "Money back: settled wins and cash-outs, after fees")
-    + item(usd(locked), "locked in", "Every leg already settled your way; Kalshi just hasn't paid yet")
-    + item(`${net < 0 ? "−" : "+"}${usd(Math.abs(net))}`, "net", "Paid out + locked in − staked. Open parlays count as $0 until they hit", net < 0 ? "down" : "up")
-    + item(usd(sum("riding")), `still riding on ${riding} ${riding === 1 ? "parlay" : "parlays"}`, "What the open parlays that are still alive cost you: the most tonight can still lose")
+    + item(`<b>${sign}${usd(Math.abs(settled))}</b> settled`, "Won, lost or cashed out so far, after fees. Open bets don't count until they're decided",
+      sign === "+" ? "up" : sign ? "down" : "")
+    + item(decided.length ? `${won} won · ${decided.length - won} lost` : "nothing decided yet", "Bets decided tonight (a cash-out below what it cost counts as lost)")
+    + item(`<b>${usd(riding)}</b> still riding on ${open.length} ${open.length === 1 ? "bet" : "bets"}`, "What your open bets tonight cost: the most you can still lose")
     + "</div>";
 }
 
@@ -573,7 +604,10 @@ function nightHTML() {
 function layout() {
   const el = $("bets");
   if (!data) { el.innerHTML = '<div class="loading">Loading your parlays…</div>'; columns = 0; return; }
-  if (!$("betsCols")) el.innerHTML = '<div class="bets-head" id="betsHead"></div><div class="bets-cols" id="betsCols"></div>';
+  if (!$("betsCols")) {
+    el.innerHTML = '<div class="bets-head" id="betsHead"></div><div class="bets-filter" id="betsFilter"></div><div class="bets-cols" id="betsCols"></div>';
+    mountFilters($("betsFilter"), { parlays: () => data?.parlays ?? [], onChange: layout });
+  }
   const groups = liveStacks();
   const match = matchCards(membersByCard(), groups.map((g) => g.map((p) => p.ticker)));
   const next = groups.map((g, i) => {
@@ -588,7 +622,9 @@ function layout() {
   waiting = 0;
   for (const [key, card] of next) { cards.set(key, card); paint(card); }  // filled before measuring heights
   columns = placeInColumns($("betsCols"), next.map(([, c]) => c.el));
-  if (!next.length) $("betsCols").innerHTML = `<div class="loading">No open ${league === "nba" ? "NBA " : ""}parlays.</div>`;
+  if (!next.length) {
+    $("betsCols").innerHTML = `<div class="loading">${filters.length ? "No open parlays match your filters." : `No open ${league === "nba" ? "NBA " : ""}parlays.`}</div>`;
+  }
   paintHead();
 }
 
@@ -819,13 +855,16 @@ function toggleDrop(parlay, leg) {
   update();
 }
 
-/** Pick a line for a leg; picking its original line undoes the adjustment. Also un-drops it. */
+/**
+ * Pick a line for a leg; picking its original line, or the picked line again, undoes the
+ * adjustment. Also un-drops it.
+ */
 function adjustLeg(parlay, leg, to) {
   const p = byTicker.get(parlay);
   const original = p?.legs.find((l) => l.ticker === leg);
   if (!original) return;
   const map = (adjusted[parlay] ??= new Map());
-  if (to === original.buy_ticker) map.delete(leg); else map.set(leg, to);
+  if (to === original.buy_ticker || map.get(leg) === to) map.delete(leg); else map.set(leg, to);
   if (!map.size) delete adjusted[parlay];
   dropped[parlay]?.delete(leg);
   if (dropped[parlay] && !dropped[parlay].size) delete dropped[parlay];
