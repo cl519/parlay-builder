@@ -8,7 +8,7 @@
 
 import { getJSON } from "./api.js";
 import { refreshBoard } from "./board.js";
-import { esc, percent, tipTime, usd } from "./format.js";
+import { esc, foulsHTML, percent, tipTime, usd } from "./format.js";
 import { chipState, liveGame, playerOut, playerStats, statValue } from "./markets.js";
 import { belowScreen, patch, placeInColumns } from "./columns.js";
 import { filters, mountFilters, parlayId, passes, renderCount } from "./filters.js";
@@ -82,7 +82,10 @@ function marginText(m) {
   return m > 0 ? `up ${m}` : m < 0 ? `down ${-m}` : "tied";
 }
 
-/** { pct, text, center } for the progress track. `center` = the goal sits mid-track (margins). */
+/**
+ * { pct, text, center } for the progress track. `center` = the goal sits mid-track (margins).
+ * `html`, when there: the text with markup (the on-court dot).
+ */
 function progress(leg) {
   if (leg.result === "scalar") return { pct: 0, text: `Didn't play · settled at ${Math.round((leg.settled_value ?? 0) * 100)}¢, which still pays` };
   if (leg.result) {
@@ -131,7 +134,12 @@ function liveProgress(leg, g) {
       const ps = playerStats(leg.game, leg.player);
       if (!ps) return { pct: 0, text: `hasn't played · ${clock}` };
       const v = statValue(ps, leg.stat);
-      return { pct: clamp01(v / leg.line), text: `${v} / ${leg.line} ${leg.stat} · ${ps.MIN}m · ${clock}`, stats: true };
+      const head = `${v} / ${leg.line} ${leg.stat} · ${ps.MIN}m`;
+      // While the game is on: on the floor or not (a bench player late in a blowout is likely
+      // done), and foul trouble
+      const court = g.state !== "in" ? ""
+        : `${ps.ON ? ' · <span class="court on">on court</span>' : ' · <span class="court">bench</span>'} · ${foulsHTML(ps.PF)}`;
+      return { pct: clamp01(v / leg.line), text: `${head} · ${clock}`, html: `${esc(head)}${court} · ${esc(clock)}`, stats: true };
     }
   }
 }
@@ -211,7 +219,7 @@ function adjustedLabel(leg, target) {
 function withPlayer(leg, text) {
   if (!leg.player || !leg.team || !text.startsWith(leg.player)) return esc(text);
   // title="" keeps the row's "Tap to…" hint from popping up on top of the stats card
-  return `<span class="pname" data-team="${esc(leg.team)}" title="">${esc(leg.player)}</span>${esc(text.slice(leg.player.length))}`;
+  return `<span class="pname" data-team="${esc(leg.team)}" data-game="${esc(leg.game)}" title="">${esc(leg.player)}</span>${esc(text.slice(leg.player.length))}`;
 }
 
 const targetOf = (p, leg) => {
@@ -251,7 +259,7 @@ function legHTML(p, leg) {
   const hint = !editable ? (lines.length ? "Already hit: tap to pick a higher line for a new parlay" : "")
     : lines.length ? "Tap to change the line or drop this leg" : "Tap to drop this leg";
   return `<div class="${cls}" id="leg-${p.ticker}-${leg.ticker}" data-p="${p.ticker}" data-leg="${leg.ticker}" ${lines.length ? "data-lines" : ""} title="${hint}">
-    <div class="bl-main"><span class="bl-label">${withPlayer(leg, target ? adjustedLabel(leg, target) : leg.label)}</span><span class="bl-sub" data-prog>${esc(pr.text)}</span></div>
+    <div class="bl-main"><span class="bl-label">${withPlayer(leg, target ? adjustedLabel(leg, target) : leg.label)}</span><span class="bl-sub" data-prog>${pr.html ?? esc(pr.text)}</span></div>
     ${track}${oddsHTML(leg, target)}${editable ? `<button class="bl-x" data-drop="${p.ticker}" data-leg="${leg.ticker}" title="${isDropped ? "Keep" : "Drop"} this leg">${isDropped ? "↺" : "✕"}</button>` : "<span></span>"}
   </div>${isEditing ? lineEditorHTML(p, leg, lines) : ""}`;
 }

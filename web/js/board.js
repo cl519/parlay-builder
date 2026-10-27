@@ -3,8 +3,8 @@
 
 import { getJSON } from "./api.js";
 import { esc, handicap, logoHTML, teamName, tipTime } from "./format.js";
-import { chipState, liveGame, playerStats, statusKind } from "./markets.js";
-import { logTableHTML } from "./tooltip.js";
+import { chipState, liveGame, statusKind } from "./markets.js";
+import { liveRow, logTableHTML } from "./tooltip.js";
 import { STATS, allLegs, pickCount, state, visibleGames } from "./state.js";
 
 const $ = (id) => document.getElementById(id);
@@ -33,8 +33,15 @@ const logs = {};  // "team|name" -> game log, once loaded
 
 const posHTML = (log) => (log?.pos ? ` - ${esc(log.pos)}` : "");
 
+/** The table for one player: tonight's game on top while it's on (labeled LIVE), then the last 5. */
+function plogHTML(game, team, name) {
+  const log = logs[`${team}|${name}`];
+  return log ? logTableHTML(log, true, liveRow(game, team, name, log)) : "";
+}
+
 function fillLog(el) {
-  el.querySelector(".plog").innerHTML = logTableHTML(logs[el.dataset.log], true);
+  const plog = el.querySelector(".plog");
+  plog.innerHTML = plogHTML(plog.dataset.game, ...el.dataset.log.split("|"));
   el.querySelector(".ppos").innerHTML = posHTML(logs[el.dataset.log]);
 }
 
@@ -65,17 +72,6 @@ function headLiveHTML(g) {
     ? `<span class="score"><b>${esc(g.away)} ${esc(L.away_score)}</b> – <b>${esc(L.home_score)} ${esc(g.home)}</b> · ${esc(L.detail)}</span>`
     : "";
   return badge + score;
-}
-
-function statLineHTML(gameKey, name) {
-  if (!liveGame(gameKey)) return "";
-  const ps = playerStats(gameKey, name);
-  if (!ps) return '<span class="pstats muted">hasn\'t played</span>';
-  const fgPct = ps.FGA ? Math.round((100 * ps.FGM) / ps.FGA) + "%" : "–";
-  const stat = (v, k) => `<span><b>${v}</b> ${k}</span>`;
-  return `<span class="pstats">${stat(ps.PTS, "PTS")}${stat(ps.REB, "REB")}${stat(ps.AST, "AST")}`
-    + `<span>FG <b>${ps.FGM}/${ps.FGA}</b> <i>${fgPct}</i></span><span>3PT <b>${ps["3PM"]}/${ps["3PA"]}</b></span>`
-    + `${stat(ps.STL, "STL")}${stat(ps.BLK, "BLK")}<span class="min">${ps.MIN}m</span></span>`;
 }
 
 // Only the count changes after a tap, so the logos aren't redrawn.
@@ -114,12 +110,11 @@ function playersHTML(g) {
       const group = `p|${g.key}|${p.name}|${s}`;
       return chipRow(s, group, p[s].map((l) => chipHTML(l, group, `${l.line}+`)).join(""));
     }).join("");
-    // Name, box score, then the prop rows. The box score is right there, so the name has no
-    // hover card here (it does on My bets).
+    // Name, box score (tonight's game on top while it's on), then the prop rows. The box score
+    // is right there, so the name has no hover card here (it does on My bets).
     html += `<div class="player" data-log="${esc(key)}">`
-      + `<div class="name"><span>${esc(p.name)}<span class="ppos">${posHTML(logs[key])}</span></span>`
-      + `<span data-pl="${esc(`${g.key}|${p.name}`)}">${statLineHTML(g.key, p.name)}</span></div>`
-      + `<div class="plog">${logs[key] ? logTableHTML(logs[key], true) : ""}</div>${rows}</div>`;
+      + `<div class="name"><span>${esc(p.name)}<span class="ppos">${posHTML(logs[key])}</span></span></div>`
+      + `<div class="plog" data-game="${esc(g.key)}">${plogHTML(g.key, p.team, p.name)}</div>${rows}</div>`;
   }
   return html || '<div class="empty">No player props listed</div>';
 }
@@ -190,9 +185,9 @@ function patchBoard() {
     el.classList.toggle("thin", s.thin);
     el.classList.toggle("hit", s.hit);
   });
-  document.querySelectorAll("#games [data-pl]").forEach((el) => {
-    const i = el.dataset.pl.indexOf("|");
-    setHTML(el, statLineHTML(el.dataset.pl.slice(0, i), el.dataset.pl.slice(i + 1)));
+  document.querySelectorAll("#games .player[data-log]").forEach((el) => {
+    const plog = el.querySelector(".plog");
+    if (logs[el.dataset.log]) setHTML(plog, plogHTML(plog.dataset.game, ...el.dataset.log.split("|")));
   });
   document.querySelectorAll("#games [data-hk]").forEach((el) => {
     const g = state.games.find((x) => x.key === el.dataset.hk);

@@ -12,6 +12,8 @@ export const teamName = (code) => TEAM[code] || code;
 
 // Pictures come from ESPN's image servers. ESPN's team codes, where they differ from Kalshi's:
 const ESPN_CODE = { GSW: "gs", NOP: "no", NYK: "ny", SAS: "sa", UTA: "utah", WAS: "wsh" };
+/** A team as ESPN's game logs write it (GSW -> GS), so tonight's row matches the games below. */
+export const espnAbbr = (team) => (ESPN_CODE[team] || team).toUpperCase();
 const IMG = 'alt="" loading="lazy" onerror="this.remove()"';  // no picture: just leave it out
 const initials = (name) => name.split(/\s+/).filter((w) => /^[A-Z]/.test(w)).slice(0, 2).map((w) => w[0]).join("");
 export const logoURL = (team) =>
@@ -32,6 +34,16 @@ export const usd = (x) => "$" + Number(x).toFixed(2);
 export const cents = (c) => (c == null ? "–" : `${c}¢`);
 export const percent = (p, digits = 1) => (p * 100).toFixed(digits);
 export const handicap = (h) => (h > 0 ? "+" : "−") + Math.abs(h);
+
+/**
+ * Fouls, live: gray for 0-2 (normal), yellow at 3-4 (foul trouble: the coach may sit him), red
+ * at 5 (one from fouling out) and 6. `short` for tight spots ("4 PF").
+ */
+export function foulsHTML(pf, short = false) {
+  if (pf == null) return "";
+  const text = pf >= 6 ? "fouled out" : short ? `${pf} PF` : `${pf} ${pf === 1 ? "foul" : "fouls"}`;
+  return `<span class="fouls ${pf >= 5 ? "bad" : pf >= 3 ? "warn" : ""}">${text}</span>`;
+}
 
 export const tipTime = (g) =>
   g.start ? new Date(g.start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";

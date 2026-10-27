@@ -150,17 +150,10 @@ header {
 }
 .headshot img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
 .tooltip .tt .headshot { width: 28px; height: 28px; margin-right: 8px; }
+.tooltip .tt .logo { width: 16px; height: 16px; margin: 0 4px 2px 2px; vertical-align: middle; }
 /* No photo on ESPN: initials in the empty frame */
 .headshot.none { display: inline-grid; place-items: center; }
 .headshot.none::before { content: attr(data-i); color: var(--muted); font-weight: 700; font-size: 12px; }
-.pstats {
-  display: inline-flex; flex-wrap: wrap; gap: 2px 10px; font-size: 12px; font-weight: 500;
-  color: var(--muted); font-variant-numeric: tabular-nums;
-}
-.pstats b { color: var(--text); font-weight: 650; }
-.pstats i { font-style: normal; opacity: .8; }
-.pstats .min { opacity: .7; }
-.pstats.muted { font-style: italic; opacity: .7; }
 
 /* ---------- Price chips ---------- */
 .chips {
@@ -224,6 +217,13 @@ header {
 .log i.l { color: var(--danger); }
 .log .avg td { border-top: 1px solid var(--line); padding-top: 4px; font-weight: 600; color: var(--muted); }
 .log .avg td:first-child { text-align: left; padding-left: 0; }
+/* Tonight's game, above the past games: same look, LIVE where the W/L goes */
+.log i.live { color: var(--accent); font-size: 9px; letter-spacing: .04em; }
+.log i.live::before { content: ""; display: inline-block; width: 5px; height: 5px; margin: 0 3px 1px 1px; border-radius: 50%; background: var(--accent); }
+.log .live td.d b { color: var(--accent); font-size: 10px; letter-spacing: .03em; text-transform: uppercase; }
+.log .live td.d b::before { content: ""; display: inline-block; width: 6px; height: 6px; margin: 0 4px 1px 0; border-radius: 50%; background: var(--accent); }
+.fouls.warn { color: var(--warn); font-weight: 600; }
+.fouls.bad { color: var(--danger); font-weight: 600; }
 .ppos { color: var(--muted); font-weight: 600; }
 .bl-label .pname { cursor: help; text-decoration: underline dotted var(--muted); text-underline-offset: 3px; }
 .tooltip .grid { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font-variant-numeric: tabular-nums; }
@@ -411,6 +411,8 @@ html:has(body[data-view="bets"]), body[data-view="bets"] { overflow-anchor: none
 .bl-main { min-width: 0; display: flex; flex-direction: column; }
 .bl-label { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bl-sub { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Steady, not blinking: dozens of legs blinking at once would pull the eye everywhere */
+.court.on::before { content: ""; display: inline-block; width: 6px; height: 6px; margin: 0 4px 1px 0; border-radius: 50%; background: var(--accent); }
 .bl-odds { text-align: right; font-variant-numeric: tabular-nums; line-height: 1.15; }
 .bl-odds b { display: block; font-size: 13px; }
 .bl-odds span { font-size: 11px; color: var(--muted); }

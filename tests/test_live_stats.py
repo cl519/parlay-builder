@@ -17,16 +17,16 @@ class NormalizeNameTest(unittest.TestCase):
 class ParseBoxTest(unittest.TestCase):
     def test_reads_labels_and_made_attempted(self):
         summary = {"boxscore": {"players": [{"statistics": [{
-            "labels": ["MIN", "PTS", "FG", "3PT", "FT", "REB", "AST", "TO", "STL", "BLK"],
+            "labels": ["MIN", "PTS", "FG", "3PT", "FT", "REB", "AST", "TO", "STL", "BLK", "OREB", "DREB", "PF"],
             "athletes": [
-                {"athlete": {"displayName": "CJ McCollum"}, "stats": ["7", "5", "2-2", "1-3", "0-0", "0", "1", "0", "2", "0"]},
+                {"athlete": {"displayName": "CJ McCollum"}, "active": True, "stats": ["7", "5", "2-2", "1-3", "0-0", "0", "1", "0", "2", "0", "0", "0", "4"]},
                 {"athlete": {"displayName": "Did Not Play"}, "stats": []},
             ],
         }]}]}}
         box = parse_box(summary)
         self.assertEqual(set(box), {"cj mccollum"})
         cj = box["cj mccollum"]
-        self.assertEqual((cj["PTS"], cj["FGM"], cj["FGA"], cj["3PM"], cj["3PA"], cj["STL"]), (5, 2, 2, 1, 3, 2))
+        self.assertEqual((cj["PTS"], cj["FGM"], cj["FGA"], cj["3PM"], cj["3PA"], cj["STL"], cj["PF"], cj["ON"]), (5, 2, 2, 1, 3, 2, 4, True))
 
 
 class ParseOutTest(unittest.TestCase):

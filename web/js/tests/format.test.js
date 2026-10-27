@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { esc, gameLabel } from "../format.js";
+import { esc, foulsHTML, gameLabel } from "../format.js";
 
 test("esc: markup in outside text shows as text", () => {
   assert.equal(esc('<img src=x onerror="alert(1)">'), "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
@@ -17,4 +17,14 @@ test("esc: missing values are empty, numbers pass through", () => {
 
 test("gameLabel escapes team codes", () => {
   assert.equal(gameLabel({ away: "BOS", home: "<b>" }), "BOS @ &lt;b&gt;");
+});
+
+test("foulsHTML: gray at 0-2, yellow at 3-4, red at 5, fouled out at 6", () => {
+  assert.equal(foulsHTML(1), '<span class="fouls ">1 foul</span>');
+  assert.equal(foulsHTML(2, true), '<span class="fouls ">2 PF</span>');
+  assert.equal(foulsHTML(undefined), "");
+  assert.match(foulsHTML(3), /warn">3 fouls</);
+  assert.match(foulsHTML(4, true), /warn">4 PF</);
+  assert.match(foulsHTML(5), /bad">5 fouls</);
+  assert.match(foulsHTML(6), /bad">fouled out</);
 });

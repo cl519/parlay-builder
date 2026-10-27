@@ -50,7 +50,11 @@ def _made_attempted(value):
 
 
 def parse_box(summary):
-    """ESPN game summary -> {normalized name: stats}. Players who haven't played are left out."""
+    """
+    ESPN game summary -> {normalized name: stats}. Players who haven't played are left out.
+    ON: on the floor right now (ESPN's "active": always five a team, the closing five once final).
+    PF: personal fouls (six and he's out).
+    """
     players = {}
     for team in summary.get("boxscore", {}).get("players", []):
         for block in team.get("statistics", []):
@@ -66,6 +70,7 @@ def parse_box(summary):
                     "REB": _int(row.get("REB")), "AST": _int(row.get("AST")),
                     "STL": _int(row.get("STL")), "BLK": _int(row.get("BLK")),
                     "FGM": fgm, "FGA": fga, "3PM": tpm, "3PA": tpa,
+                    "PF": _int(row.get("PF")), "ON": bool(athlete.get("active")),
                 }
     return players
 

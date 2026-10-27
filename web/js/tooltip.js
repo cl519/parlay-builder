@@ -2,7 +2,8 @@
 // and a player's last 5 games + season averages on their name.
 
 import { getJSON } from "./api.js";
-import { esc, headshotHTML } from "./format.js";
+import { esc, espnAbbr, headshotHTML, logoHTML, teamName } from "./format.js";
+import { liveGame, playerStats } from "./markets.js";
 import { state } from "./state.js";
 
 const LEGEND_TEXT = '<div class="tt">Thin market</div>Few trades on this line, so the bid and ask are 10¢+ apart '
@@ -64,18 +65,30 @@ function chipHTML(chip) {
 /**
  * A player's last 5 games and season average as a table: the hover card, and (board) beside each
  * player's photo on Build, where it has no dates, a "Last 5 games" label and always 5 game rows.
+ * `live`: tonight's game (see liveRow), shown as the top row.
  */
-export function logTableHTML(log, board = false) {
+export function logTableHTML(log, board = false, live = null) {
   if (log.missing) return `<div class="muted">Not found on ESPN's roster.</div>`;
   if (!log.played) return `<div class="muted">No regular-season games yet.</div>`;
   const day = (iso) => new Date(iso).toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
-  let rows = log.games.map((g) => `<tr>${board ? "" : `<td class="d">${day(g.date)}</td>`}`
+  // On Build tonight's game takes one of the 5 rows, so the table stays the same height
+  const tonight = live && (live.stats || board);
+  const games = board && tonight ? log.games.slice(0, BOARD_ROWS - 1) : log.games;
+  let rows = games.map((g) => `<tr>${board ? "" : `<td class="d">${day(g.date)}</td>`}`
     + `<td class="d">${g.at ? "@" : "vs"} ${esc(g.opp)} <i class="${g.result === "W" ? "w" : "l"}">${esc(g.result)}</i></td>`
     + `${statCells(g, String)}</tr>`).join("");
   const lead = board ? 1 : 2;  // label columns before the stats
+  // Tonight on top, a row like the games below with LIVE where the W/L goes. On Build every
+  // player in the game gets it (dashes until he plays), so they stay the same height.
+  if (tonight) {
+    const cls = live.result === "LIVE" ? "live" : live.result === "W" ? "w" : "l";
+    const cells = live.stats ? statCells(live.stats, String) : LOG_STATS.map(() => "<td>–</td>").join("");
+    rows = `<tr class="tonight">${board ? "" : '<td class="d">Today</td>'}`
+      + `<td class="d">${live.at ? "@" : "vs"} ${esc(live.opp)} <i class="${cls}">${live.result}</i></td>${cells}</tr>${rows}`;
+  }
   // On Build: games not played yet are rows of dashes, so the average always sits at the bottom
   const none = `<tr class="none"><td class="d">–</td>${LOG_STATS.map(() => "<td>–</td>").join("")}</tr>`;
-  if (board) rows += none.repeat(Math.max(0, BOARD_ROWS - log.games.length));
+  if (board) rows += none.repeat(Math.max(0, BOARD_ROWS - games.length - (tonight ? 1 : 0)));
   const corner = board ? '<th class="cap">Last 5 games</th>' : "<th></th><th></th>";
   return `<table class="log"><tr>${corner}${LOG_STATS.map(headCell).join("")}</tr>${rows}`
     + `<tr class="avg"><td colspan="${lead}">${board ? "Avg" : `Season avg <span class="muted">(${log.played} GP)</span>`}</td>`
@@ -84,9 +97,27 @@ export function logTableHTML(log, board = false) {
 
 const logLabel = (log) => (!log.played ? "" : log.played === 1 ? " · Only game" : log.played <= 5 ? ` · All ${log.played} games` : " · Last 5");
 
-function playerLogHTML(rawName, team, log) {
-  return `<div class="tt">${headshotHTML(team, rawName)}${esc(rawName)} <span class="muted">${logLabel(log)}</span></div>`
-    + logTableHTML(log);
+const etDay = (iso) => new Date(iso).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+const MONTHS = "JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC";
+const keyDay = (key) => `20${key.slice(0, 2)}-${String(MONTHS.indexOf(key.slice(2, 5)) / 3 + 1).padStart(2, "0")}-${key.slice(5, 7)}`;
+
+/**
+ * Tonight's game for the top of the table, read like the games below it: { at, opp, result,
+ * stats }, result "LIVE" while it's on and W/L once final (stats null if he hasn't played). Null
+ * before tip-off, and once ESPN's game log has the game.
+ */
+export function liveRow(gameKey, team, name, log) {
+  const g = gameKey && liveGame(gameKey);
+  if (!g || (g.state === "post" && log?.games?.[0] && etDay(log.games[0].date) === keyDay(gameKey))) return null;
+  const away = gameKey.slice(-6, -3), home = gameKey.slice(-3), at = team === away;
+  const mine = at ? g.away_score : g.home_score, theirs = at ? g.home_score : g.away_score;
+  const result = g.state === "in" ? "LIVE" : mine > theirs ? "W" : "L";
+  return { at, opp: espnAbbr(at ? home : away), result, stats: playerStats(gameKey, name) };
+}
+
+function playerLogHTML(rawName, team, log, live) {
+  return `<div class="tt">${headshotHTML(team, rawName)}${esc(rawName)} <span class="muted">· ${logoHTML(team)}${esc(teamName(team))}${logLabel(log)}</span></div>`
+    + logTableHTML(log, false, live);
 }
 
 async function showPlayer(target) {
@@ -96,7 +127,8 @@ async function showPlayer(target) {
   let html;
   try {
     const q = new URLSearchParams({ team: target.dataset.team, name });
-    html = playerLogHTML(name, target.dataset.team, await getJSON(`/api/player?${q}`));
+    const log = await getJSON(`/api/player?${q}`);
+    html = playerLogHTML(name, target.dataset.team, log, liveRow(target.dataset.game, target.dataset.team, name, log));
   } catch (e) {
     html = `<div class="tt">${esc(name)}</div><div class="muted">Couldn't load games: ${esc(e.message)}</div>`;
   }
