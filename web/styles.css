@@ -218,7 +218,8 @@ header {
 .log .avg td { border-top: 1px solid var(--line); padding-top: 4px; font-weight: 600; color: var(--muted); }
 .log .avg td:first-child { text-align: left; padding-left: 0; }
 /* Tonight's game, above the past games: same look, LIVE where the W/L goes */
-.log i.live { color: var(--accent); font-size: 9px; letter-spacing: .04em; }
+.log i.live { color: var(--text); font-size: 10px; }
+.log i span { color: var(--muted); font-weight: 600; }
 .log i.live::before { content: ""; display: inline-block; width: 5px; height: 5px; margin: 0 3px 1px 1px; border-radius: 50%; background: var(--accent); }
 .log .live td.d b { color: var(--accent); font-size: 10px; letter-spacing: .03em; text-transform: uppercase; }
 .log .live td.d b::before { content: ""; display: inline-block; width: 6px; height: 6px; margin: 0 4px 1px 0; border-radius: 50%; background: var(--accent); }

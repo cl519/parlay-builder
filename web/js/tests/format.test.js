@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { esc, foulsHTML, gameLabel } from "../format.js";
+import { esc, foulsHTML, gameLabel, period } from "../format.js";
 
 test("esc: markup in outside text shows as text", () => {
   assert.equal(esc('<img src=x onerror="alert(1)">'), "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
@@ -27,4 +27,13 @@ test("foulsHTML: gray at 0-2, yellow at 3-4, red at 5, fouled out at 6", () => {
   assert.match(foulsHTML(4, true), /warn">4 PF</);
   assert.match(foulsHTML(5), /bad">5 fouls</);
   assert.match(foulsHTML(6), /bad">fouled out</);
+});
+
+test("period: ESPN's game status as a short quarter", () => {
+  assert.equal(period("6:52 - 2nd"), "Q2");
+  assert.equal(period("End of 3rd"), "End Q3");
+  assert.equal(period("Halftime"), "Half");
+  assert.equal(period("2:10 - OT"), "OT");
+  assert.equal(period("0:30 - 2OT"), "2OT");
+  assert.equal(period(undefined), "");
 });

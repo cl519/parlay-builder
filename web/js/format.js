@@ -51,3 +51,11 @@ export const tipTime = (g) =>
 // Kalshi game keys start with the date: "26OCT21ATLORL" -> day "26OCT21" -> "Oct 21"
 export const dayOf = (gameKey) => gameKey.slice(0, 7);
 export const dayLabel = (day) => day.charAt(2) + day.slice(3, 5).toLowerCase() + " " + day.slice(5, 7);
+
+/** ESPN's "6:52 - 2nd" / "End of 3rd" / "Halftime" / "2:10 - OT" as Q2 / End Q3 / Half / OT. */
+export function period(detail = "") {
+  if (/half/i.test(detail)) return "Half";
+  const m = detail.match(/(\d)(?:st|nd|rd|th)|(\d*OT)/i);
+  const q = !m ? "" : m[1] ? `Q${m[1]}` : m[2].toUpperCase();
+  return /^end/i.test(detail) && q ? `End ${q}` : q;
+}

@@ -2,7 +2,7 @@
 // and a player's last 5 games + season averages on their name.
 
 import { getJSON } from "./api.js";
-import { esc, espnAbbr, headshotHTML, logoHTML, teamName } from "./format.js";
+import { esc, espnAbbr, headshotHTML, logoHTML, period, teamName } from "./format.js";
 import { liveGame, playerStats } from "./markets.js";
 import { state } from "./state.js";
 
@@ -83,8 +83,10 @@ export function logTableHTML(log, board = false, live = null) {
   if (tonight) {
     const cls = live.result === "LIVE" ? "live" : live.result === "W" ? "w" : "l";
     const cells = live.stats ? statCells(live.stats, String) : LOG_STATS.map(() => "<td>–</td>").join("");
+    // The score (his team first) and quarter where LIVE was, so a blowout shows at a glance
+    const mark = live.result === "LIVE" ? `${live.score} <span>${esc(live.period)}</span>` : `${live.result} <span>${live.score}</span>`;
     rows = `<tr class="tonight">${board ? "" : '<td class="d">Today</td>'}`
-      + `<td class="d">${live.at ? "@" : "vs"} ${esc(live.opp)} <i class="${cls}">${live.result}</i></td>${cells}</tr>${rows}`;
+      + `<td class="d">${live.at ? "@" : "vs"} ${esc(live.opp)} <i class="${cls}">${mark}</i></td>${cells}</tr>${rows}`;
   }
   // On Build: games not played yet are rows of dashes, so the average always sits at the bottom
   const none = `<tr class="none"><td class="d">–</td>${LOG_STATS.map(() => "<td>–</td>").join("")}</tr>`;
@@ -112,7 +114,8 @@ export function liveRow(gameKey, team, name, log) {
   const away = gameKey.slice(-6, -3), home = gameKey.slice(-3), at = team === away;
   const mine = at ? g.away_score : g.home_score, theirs = at ? g.home_score : g.away_score;
   const result = g.state === "in" ? "LIVE" : mine > theirs ? "W" : "L";
-  return { at, opp: espnAbbr(at ? home : away), result, stats: playerStats(gameKey, name) };
+  return { at, opp: espnAbbr(at ? home : away), result, score: `${mine}–${theirs}`, period: period(g.detail),
+    stats: playerStats(gameKey, name) };
 }
 
 function playerLogHTML(rawName, team, log, live) {
