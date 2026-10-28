@@ -137,7 +137,11 @@ def _build():
     today = datetime.now(EASTERN).date()
     games = {}
     for day in (today - timedelta(days=1), today):  # yesterday too: late finishes, bets awaiting settlement
-        games.update(_scoreboard(day))
+        try:
+            games.update(_scoreboard(day))
+        except Exception:  # ESPN sometimes sends one date back empty: don't let it blank tonight
+            if day == today:
+                raise
     started = [g for g in games.values() if g["state"] in ("in", "post")]
     with ThreadPoolExecutor(max_workers=6) as pool:
         for g, (box, out) in zip(started, pool.map(_box, started)):
