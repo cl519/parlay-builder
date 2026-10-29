@@ -14,7 +14,8 @@ export const state = {
   groupOf: {},        // ticker -> its slip group
   picks: readPicks(),
   day: null,          // "26OCT21"
-  live: { games: {} } // /api/live: scores + box scores keyed by Kalshi player name
+  live: { games: {} }, // /api/live: scores + box scores keyed by Kalshi player name
+  hits: {},           // /api/history: "Player|PTS|15" -> [hits, nights] on your own bets this season
 };
 
 function readPicks() {

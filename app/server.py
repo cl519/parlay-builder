@@ -11,6 +11,7 @@ GET  /api/player      ?team=PHI&name=...: last 5 games + season averages (ESPN),
 GET  /api/headshot    ?team=PHI&name=...: redirects to the player's ESPN photo (404 if none)
 GET  /api/balance     cash you can spend on parlays (private: needs the token)
 GET  /api/bets        your open parlays with per-leg chances (private: needs the token)
+GET  /api/history     your hit rate on each prop line this season, for Build (private: needs the token)
 POST /api/move-funds  move all cash onto the parlay shard (stays in your account)
 POST /api/preview     live price for the slip (1 leg: order book; 2+: RFQ cancelled at once), no money moves
 POST /api/prepare     REAL MONEY step 1: fix the price for the confirm popup (holds a parlay quote)
@@ -33,6 +34,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
 import betting
+import history
 from bets import bets_payload
 from config import PORT
 from live_stats import live_payload
@@ -134,6 +136,10 @@ class Handler(BaseHTTPRequestHandler):
                 if not self._trusted():
                     return self._send(403, {"error": "forbidden"})
                 return self._send(200, bets_payload(force="refresh" in self.path))
+            if path == "/api/history":
+                if not self._trusted():
+                    return self._send(403, {"error": "forbidden"})
+                return self._send(200, history.hit_rates())
         except Exception as e:
             return self._send(502, {"error": str(e)})
         self._send(404, {"error": "not found"})
@@ -160,5 +166,6 @@ if __name__ == "__main__":
         betting.initialize()
     except Exception as e:  # no config yet, or a key file that can't be read
         raise SystemExit(f"Can't load your Kalshi API key: {e}")
+    history.start()
     print(f"Parlay builder on http://127.0.0.1:{PORT}")
     ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()

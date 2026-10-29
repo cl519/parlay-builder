@@ -15,6 +15,7 @@ import { installTooltips } from "./tooltip.js";
 const $ = (id) => document.getElementById(id);
 const MENU_POLL_MS = 30000;
 const LIVE_POLL_MS = 20000;
+const HISTORY_POLL_MS = 60000;  // the server syncs every 5 minutes; this just picks it up
 
 let liveSig = "";
 
@@ -43,6 +44,15 @@ async function loadLive() {
     if (state.games.length) { refreshBoard(); renderSlip(); }
     refreshBetsProgress();
   } catch { /* live stats are a nice-to-have; keep the last ones */ }
+}
+
+async function loadHits() {
+  try {
+    const data = await getJSON("/api/history", { private: true });
+    if (JSON.stringify(data.rates) === JSON.stringify(state.hits)) return;
+    state.hits = data.rates;
+    if (state.games.length) refreshBoard();
+  } catch { /* hit rates are a nice-to-have; keep the last ones */ }
 }
 
 /** Picks changed wholesale (cleared, placed, another tab): patch every button, redraw the slip. */
@@ -106,5 +116,7 @@ installBalance();
 applyView();
 loadMenus();
 loadLive();
+loadHits();
 setInterval(loadMenus, MENU_POLL_MS);
 setInterval(loadLive, LIVE_POLL_MS);
+setInterval(loadHits, HISTORY_POLL_MS);

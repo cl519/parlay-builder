@@ -80,6 +80,12 @@ def _pages(path, key, max_pages=20, **params):
     return out
 
 
+def bought_since(ts):
+    """Every ticker you've bought YES on since `ts` (parlays are always YES), archived fills included. Read-only."""
+    fills = _pages("/historical/fills", "fills", max_pages=50, min_ts=ts) + _pages("/portfolio/fills", "fills", max_pages=50, min_ts=ts)
+    return {f["ticker"] for f in fills if f.get("action") == "buy" and f.get("side") == "yes"}
+
+
 def recent_money(days=3):
     """(fills, settlements) of the last `days`: enough for any bet on tonight's slate. Read-only."""
     since = int(time.time()) - days * 86400

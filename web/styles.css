@@ -170,6 +170,17 @@ header {
 .chip:disabled { opacity: .35; cursor: not-allowed; }
 .chip .ln { font-weight: 700; font-size: 13px; }
 .chip .px { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.row.prop { align-items: stretch; }
+/* The label column splits like the chips beside it: the stat centered on the chip, "Hit rate" on
+   the same line as the numbers (same gap, same size, and the chips' 4px scrollbar room below) */
+.row.prop .lbl { display: grid; grid-template-rows: 1fr auto; row-gap: 3px; padding-bottom: 4px; }
+.row.prop .lbl { align-items: center; justify-items: center; font-size: 12px; }
+.row.prop .lbl small, .hr { font-size: 10px; line-height: 14px; font-weight: 500; }
+.row.prop .lbl { color: var(--text); }
+.row.prop .lbl small { font-size: 9px; color: var(--muted); }
+.cell { flex: none; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.hr { color: var(--muted); font-variant-numeric: tabular-nums; cursor: default; }
+.hr.none { opacity: .45; }
 .chips.ml .chip { min-width: 120px; flex-direction: row; justify-content: space-between; gap: 12px; padding: 9px 12px; }
 
 .chip.on { background: var(--accent); color: var(--accent-ink); }

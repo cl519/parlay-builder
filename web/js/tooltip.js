@@ -8,7 +8,7 @@ import { state } from "./state.js";
 
 const LEGEND_TEXT = '<div class="tt">Thin market</div>Few trades on this line, so the bid and ask are 10¢+ apart '
   + "and the button price is less reliable. Hover any button to see its bid and ask.";
-const TARGETS = ".chip[data-t], #legend, .pname[data-team]";
+const TARGETS = ".chip[data-t], #legend, .pname[data-team], .hr[data-tip]";
 // Columns of the game log: a stat, or [made, tried] shown as "5/12"
 const LOG_STATS = ["MIN", "PTS", "REB", "AST", ["FG", "FGM", "FGA"], ["3PT", "3PM", "3PA"], "STL", "BLK"];
 const BOARD_ROWS = 5;  // on Build, always 5 game rows (dashes if fewer), so every player is the same height
@@ -152,7 +152,7 @@ export function installTooltips() {
     const isChip = target.matches(".chip");
     timer = setTimeout(() => {
       current = target;
-      show(target, isChip ? chipHTML(target) : LEGEND_TEXT);
+      show(target, isChip ? chipHTML(target) : target.dataset.tip ? esc(target.dataset.tip) : LEGEND_TEXT);
     }, isChip ? 250 : 100);
   });
   document.addEventListener("mouseout", (e) => {

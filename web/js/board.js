@@ -24,6 +24,25 @@ function chipRow(label, rowKey, chips, extraClass = "") {
     + `<div class="chips ${extraClass}" data-k="${esc(rowKey)}">${chips}</div></div>`;
 }
 
+// ---------- Your hit rate on each prop line ----------
+// Under every player prop chip: how often that line hit on nights you bet it this season
+// ("3/5"), or "–/–" if you never have. Small and gray: a footnote to the price, not a button.
+
+const hitKey = (player, stat, line) => `${player}|${stat}|${line}`;
+
+function hitHTML(key) {
+  const r = state.hits[key];
+  const tip = r ? `Your bets: hit ${r[0]} of ${r[1]} ${r[1] === 1 ? "night" : "nights"} (${Math.round((100 * r[0]) / r[1])}%)`
+    : "You haven't bet this line this season";
+  return `<span class="hr${r ? "" : " none"}" data-h="${esc(key)}" data-tip="${esc(tip)}">${r ? `${r[0]}/${r[1]}` : "–/–"}</span>`;
+}
+
+function propRow(stat, group, legs, player) {
+  const cells = legs.map((l) => `<div class="cell">${chipHTML(l, group, `${l.line}+`)}${hitHTML(hitKey(player, stat, l.line))}</div>`).join("");
+  return `<div class="row prop"><span class="lbl">${esc(stat)}<small>Hit rate</small></span>`
+    + `<div class="chips" data-k="${esc(group)}">${cells}</div></div>`;
+}
+
 // ---------- Each player's recent games, beside their photo ----------
 // The hover card's table (last 5 games + season average) and the player's position, loaded as
 // a player scrolls near the screen and kept for the session (the server refreshes its copy
@@ -108,7 +127,7 @@ function playersHTML(g) {
     const key = `${p.team}|${p.name}`;
     const rows = STATS.filter((s) => p[s].length).map((s) => {
       const group = `p|${g.key}|${p.name}|${s}`;
-      return chipRow(s, group, p[s].map((l) => chipHTML(l, group, `${l.line}+`)).join(""));
+      return propRow(s, group, p[s], p.name);
     }).join("");
     // Name, box score (tonight's game on top while it's on), then the prop rows. The box score
     // is right there, so the name has no hover card here (it does on My bets).
@@ -184,6 +203,11 @@ function patchBoard() {
     el.classList.toggle("on", s.on);
     el.classList.toggle("thin", s.thin);
     el.classList.toggle("hit", s.hit);
+  });
+  document.querySelectorAll("#games .hr[data-h]").forEach((el) => {
+    const fresh = document.createElement("template");
+    fresh.innerHTML = hitHTML(el.dataset.h);
+    if (el.outerHTML !== fresh.innerHTML) el.replaceWith(fresh.content);
   });
   document.querySelectorAll("#games .player[data-log]").forEach((el) => {
     const plog = el.querySelector(".plog");
