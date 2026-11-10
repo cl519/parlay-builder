@@ -6,8 +6,11 @@ A lightweight web app that connects to your [Kalshi](https://kalshi.com) account
 place NBA parlays, with live player stats on every leg.
 
 It has two tabs. **Build** lets you browse every game's lines, tap them into a slip, and place it
-at a live price. **My bets** lets you manage your open parlays: follow each leg live, swap or
-raise legs and rebuy, add more, or cash out.
+at a live price, with team records, your hit rate on each line, and a Fraud Watch list of
+players and teams you don't trust. **My bets** lets you manage your open parlays: follow each
+leg live, swap or raise legs and rebuy, add more, or cash out.
+
+![My bets](docs/my-bets.png)
 
 ## Setup
 
@@ -41,6 +44,7 @@ raise legs and rebuy, add more, or cash out.
 | `./parlay stop` | Stop it |
 | `./parlay update` | Get the latest version |
 | `./parlay setup` | Change your API key |
+| `./parlay phone` | Let the iPhone app in `ios/` read your bets (read-only) |
 
 `app/kalshi.py` started from [yakub268/kalshi-mcp](https://github.com/yakub268/kalshi-mcp) (MIT).
 Not affiliated with Kalshi or ESPN.
