@@ -7,14 +7,17 @@
 
 import { getJSON, post } from "./api.js";
 import { esc, logoHTML, teamName } from "./format.js";
+import { normalizeName } from "./names.js";
 import { suggestFrauds } from "./fraudmatch.js";
 
 let entries = [];
 let gamesNow = () => [];
+let roster = [];        // every NBA player (/api/players), so anyone can be added
 let changed = () => {};
 const roots = [];
 
-export const fraudPlayer = (name) => entries.some((e) => e.kind === "player" && e.name === name);
+// By normalized name: a player added from ESPN's roster matches Kalshi's spelling on the board
+export const fraudPlayer = (name) => entries.some((e) => e.kind === "player" && normalizeName(e.name) === normalizeName(name));
 export const fraudTeam = (team) => entries.some((e) => e.kind === "team" && e.team === team);
 
 // ---------- Saving ----------
@@ -26,6 +29,7 @@ let latest = 0;         // the newest change; older ones' replies are ignored
 const showError = (text) => roots.forEach((r) => (r.el.querySelector(".fw-err").textContent = text));
 
 export async function loadFrauds() {
+  getJSON("/api/players").then((d) => (roster = d.players)).catch(() => { /* the board's players still show */ });
   try {
     entries = (await getJSON("/api/frauds", { private: true })).entries;
     loaded = true;
@@ -78,11 +82,12 @@ function renderLists() {
 function renderMenu(r) {
   const menu = r.el.querySelector(".fw-menu");
   if (!r.query.trim()) { menu.hidden = true; return; }
-  r.options = suggestFrauds(gamesNow(), r.query, entries);
+  r.options = suggestFrauds(gamesNow(), r.query, entries, roster);
   menu.hidden = false;
   menu.innerHTML = r.options.length
     ? r.options.map((o, i) => `<button class="fw-opt ${i === r.active ? "on" : ""}" data-fwopt="${i}">${logoHTML(o.team)}`
-      + `<span>${esc(o.kind === "team" ? teamName(o.team) : o.name)}</span><small>${o.kind === "team" ? "team" : esc(o.team)}</small></button>`).join("")
+      + `<span>${esc(o.kind === "team" ? teamName(o.team) : o.name)}</span><small>${o.kind === "team" ? "team" : esc(o.team)}</small>`
+      + '<b class="fw-plus" aria-hidden="true">+</b></button>').join("")
     : '<div class="fw-none">No player or team on the board matches</div>';
 }
 

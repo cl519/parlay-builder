@@ -17,26 +17,30 @@ const ALIASES = {
   TOR: "Toronto", UTA: "Utah", WAS: "Washington Wiz",
 };
 
+export const MAX_SUGGESTIONS = 5;
+
 /**
- * Teams (by code, name, city or nickname) and players (anyone on a board's menu, any day) matching `query`,
- * leaving out who's already listed. Teams first, then players whose name has a word starting
- * with what you typed, then the rest; starters (the most prop lines) before bench players.
+ * Up to 5 teams (by code, name, city or nickname) and players matching `query`, leaving out
+ * who's already listed. Players: anyone on a board's menu (any day) plus `roster`, every NBA
+ * player (so someone without a game soon can still be added). Names with a word starting with
+ * what you typed come first; then teams before players, and players on the board, starters
+ * (the most prop lines) first, before the rest of the league.
  */
-export function suggestFrauds(games, query, listed = []) {
+export function suggestFrauds(games, query, listed = [], roster = []) {
   const q = normalizeName(query);
   if (!q) return [];
   const starts = (text) => normalizeName(text).split(" ").some((w) => w.startsWith(q));
   const has = (text) => normalizeName(text).includes(q);
-  const taken = new Set(listed.map((e) => (e.kind === "team" ? `t|${e.team}` : `p|${e.name}`)));
+  const taken = new Set(listed.map((e) => (e.kind === "team" ? `t|${e.team}` : `p|${normalizeName(e.name)}`)));
   const teams = TEAMS.filter((t) => !taken.has(`t|${t}`) && (t.toLowerCase().startsWith(q) || has(`${ALIASES[t]} ${teamName(t)}`)))
-    .map((t) => ({ kind: "team", team: t, rank: 0 }));
-  const players = new Map();
-  for (const g of games) {
-    for (const p of g.players) {
-      if (players.has(p.name) || taken.has(`p|${p.name}`) || !has(p.name)) continue;
-      players.set(p.name, { kind: "player", name: p.name, team: p.team, rank: starts(p.name) ? 0 : 1, n: STATS.reduce((a, s) => a + p[s].length, 0) });
-    }
-  }
-  const byRank = (a, b) => a.rank - b.rank || (b.n ?? 0) - (a.n ?? 0);
-  return [...teams.sort(byRank), ...[...players.values()].sort(byRank)].slice(0, 8);
+    .map((t) => ({ kind: "team", team: t, rank: t.toLowerCase().startsWith(q) || starts(`${ALIASES[t]} ${teamName(t)}`) ? 0 : 1, n: Infinity }));
+  const players = new Map();  // normalized name -> suggestion; the board's spelling wins (it's Kalshi's)
+  const offer = (name, team, n) => {
+    const key = normalizeName(name);
+    if (players.has(key) || taken.has(`p|${key}`) || !has(name)) return;
+    players.set(key, { kind: "player", name, team, rank: starts(name) ? 0 : 1, n });
+  };
+  for (const g of games) for (const p of g.players) offer(p.name, p.team, STATS.reduce((a, s) => a + p[s].length, 0));
+  for (const p of roster) offer(p.name, p.team, 0);
+  return [...teams, ...players.values()].sort((a, b) => a.rank - b.rank || b.n - a.n).slice(0, MAX_SUGGESTIONS);
 }

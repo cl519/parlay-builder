@@ -9,6 +9,7 @@ GET  /api/games       per-game menus from Kalshi's public market data
 GET  /api/live        live scores + player box scores (ESPN), keyed by Kalshi player name
 GET  /api/player      ?team=PHI&name=...: last 5 games + season averages (ESPN), for the hover card
 GET  /api/standings   every team's record, last 10, streak and seed (ESPN), for the board
+GET  /api/players    every player on every NBA roster (ESPN), for Fraud Watch's search
 GET  /api/headshot    ?team=PHI&name=...: redirects to the player's ESPN photo (404 if none)
 GET  /api/balance     cash you can spend on parlays (private: needs the token)
 GET  /api/bets        your open parlays with per-leg chances (private: needs the token)
@@ -45,7 +46,7 @@ from bets import bets_payload
 from config import PORT
 from live_stats import live_payload
 from menus import games_payload
-from player_log import headshot_url, player_payload
+from player_log import all_players, headshot_url, player_payload
 from standings import standings_payload
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -133,6 +134,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, games_payload(force="refresh" in self.path))
             if path == "/api/live":
                 return self._send(200, live_payload())
+            if path == "/api/players":
+                return self._send(200, all_players())
             if path == "/api/standings":
                 return self._send(200, standings_payload())
             if path in ("/api/player", "/api/headshot"):

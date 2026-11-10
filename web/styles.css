@@ -617,10 +617,18 @@ html:has(body[data-view="bets"]), body[data-view="bets"] { overflow-anchor: none
   border: 1px solid var(--line); border-radius: 10px; padding: 4px; box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
 }
 .fw-strip .fw-menu { width: 260px; }
+/* In the panel, suggestions sit under the box and push the list down (nothing hidden behind them) */
+.fw-rail .fw-menu {
+  position: static; width: auto; min-width: 0; margin-top: 6px; padding: 0; background: none;
+  border: 0; box-shadow: none; border-bottom: 1px dashed rgba(var(--fraud), .28); padding-bottom: 6px;
+}
+.fw-rail:not(.on) .fw-menu { border-bottom-color: var(--line); }
 .fw-opt { display: flex; align-items: center; gap: 6px; width: 100%; padding: 6px 8px; border-radius: 6px; text-align: left; font-size: 13px; }
 .fw-opt span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fw-opt.on, .fw-opt:hover { background: var(--chip-hover); }
 .fw-opt small { margin-left: auto; color: var(--muted); }
+.fw-plus { color: var(--muted); font-size: 15px; line-height: 1; width: 20px; text-align: center; flex: none; }
+.fw-opt.on .fw-plus, .fw-opt:hover .fw-plus { color: var(--text); }
 .fw-none { color: var(--muted); font-size: 12px; padding: 8px; }
 .fw .logo { width: 16px; height: 16px; flex: none; }
 .fw-list { list-style: none; margin: 0; padding: 0; }

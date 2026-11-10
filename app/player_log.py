@@ -9,6 +9,7 @@ summary row, which can lag a game behind. Only finished regular-season games cou
 
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 from live_stats import ESPN_BASE, ESPN_TEAM, normalize_name
 from net import get_json
@@ -22,6 +23,7 @@ STATS = ("MIN", "FGM", "FGA", "3PM", "3PA", "PTS", "REB", "AST", "STL", "BLK")
 HEADSHOT = "https://a.espncdn.com/i/headshots/nba/players/full/{}.png"  # ESPN's original (600x436, ~200KB), its largest
 
 _rosters = {}  # Kalshi team code -> (fetched at, {normalized name: athlete id})
+_names = {}    # Kalshi team code -> players' names as ESPN writes them
 _photos = set()  # athlete ids ESPN has a headshot for
 _positions = {}  # athlete id -> "G" / "F" / "C" (ESPN only has these three)
 _logs = {}     # athlete id -> (fetched at, payload)
@@ -48,9 +50,29 @@ def _roster(team):
     roster = {normalize_name(a["displayName"]): a["id"] for a in athletes}
     with _lock:
         _rosters[team] = (time.time(), roster)
+        _names[team] = [a["displayName"] for a in athletes]
         _photos.update(a["id"] for a in athletes if a.get("headshot"))
         _positions.update({a["id"]: a.get("position", {}).get("abbreviation") for a in athletes})
     return roster
+
+
+TEAMS = ("ATL", "BOS", "BKN", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM",
+         "MIA", "MIL", "MIN", "NOP", "NYK", "OKC", "ORL", "PHI", "PHX", "POR", "SAC", "SAS", "TOR", "UTA", "WAS")
+
+
+def _try_roster(team):
+    try:
+        _roster(team)
+    except Exception:  # one team failing shouldn't hide the other 29
+        pass
+
+
+def all_players():
+    """Every player on every NBA roster (Kalshi team codes), for Fraud Watch: anyone, not just tonight's games."""
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(_try_roster, TEAMS))
+    with _lock:
+        return {"players": [{"name": n, "team": t} for t in TEAMS for n in _names.get(t, [])]}
 
 
 def _int(v):
