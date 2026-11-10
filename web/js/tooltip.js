@@ -9,7 +9,7 @@ import { state } from "./state.js";
 
 const LEGEND_TEXT = '<div class="tt">Thin market</div>Few trades on this line, so the bid and ask are 10¢+ apart '
   + "and the button price is less reliable. Hover any button to see its bid and ask.";
-const TARGETS = ".chip[data-t], #legend, .pname[data-team], .hr[data-tip]";
+const TARGETS = ".chip[data-t], #legend, .pname[data-team], .hr[data-tip], .pflag[data-tip]";
 // Columns of the game log: a stat, or [made, tried] shown as "5/12"
 const LOG_STATS = ["MIN", "PTS", "REB", "AST", ["FG", "FGM", "FGA"], ["3PT", "3PM", "3PA"], "STL", "BLK"];
 const BOARD_ROWS = 5;  // on Build, always 5 game rows (dashes if fewer), so every player is the same height
@@ -34,6 +34,7 @@ function position(target) {
 function show(target, html) {
   el.innerHTML = html;
   el.classList.toggle("wide", target.matches(".pname"));
+  el.classList.toggle("text", target.matches("[data-tip]"));  // a line of text: as wide as it is
   position(target);
   el.classList.add("show");
 }

@@ -3,7 +3,7 @@
 import { getJSON } from "./api.js";
 import { applyFrauds, renderBoard, refreshBoard, renderDays, syncGroup } from "./board.js";
 import { dayLabel, esc } from "./format.js";
-import { loadFrauds, mountFrauds } from "./frauds.js";
+import { loadFrauds, mountFrauds, toggleFraudPlayer, toggleFraudTeam } from "./frauds.js";
 import { startPlaceBet } from "./place.js";
 import { installBalance } from "./balance.js";
 import { installBets, onBetsLoaded, refreshBetsProgress, reloadBets, showBets } from "./bets.js";
@@ -78,6 +78,12 @@ function onClick(e) {
     togglePick(chip.dataset.g, chip.dataset.t);
     syncGroup(chip.dataset.g);
     renderSlip();
+    return;
+  }
+  const flag = e.target.closest(".pflag");
+  if (flag) {
+    if (flag.dataset.fwt) toggleFraudTeam(flag.dataset.fwt);
+    else { const [team, ...name] = flag.dataset.fwp.split("|"); toggleFraudPlayer(name.join("|"), team); }
     return;
   }
   const remove = e.target.closest("[data-rm]");

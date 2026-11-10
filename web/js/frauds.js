@@ -20,6 +20,16 @@ const roots = [];
 export const fraudPlayer = (name) => entries.some((e) => e.kind === "player" && normalizeName(e.name) === normalizeName(name));
 export const fraudTeam = (team) => entries.some((e) => e.kind === "team" && e.team === team);
 
+/** The flag by a name on the board: on or off the list, without typing. */
+export function toggleFraudPlayer(name, team) {
+  save(fraudPlayer(name) ? entries.filter((e) => !(e.kind === "player" && normalizeName(e.name) === normalizeName(name)))
+    : [...entries, { kind: "player", name, team }]);
+}
+
+export function toggleFraudTeam(team) {
+  save(fraudTeam(team) ? entries.filter((e) => !(e.kind === "team" && e.team === team)) : [...entries, { kind: "team", team }]);
+}
+
 // ---------- Saving ----------
 
 let loaded = false;     // never save before the saved list is in: that would overwrite it
@@ -72,7 +82,7 @@ function renderLists() {
   for (const r of roots) {
     const list = r.el.querySelector(".fw-list");
     list.innerHTML = entries.map(entryHTML).join("")
-      || '<li class="fw-empty">Nobody yet. Type a player or team above.</li>';
+      || '<li class="fw-empty">Nobody yet. Tap the flag by any name, or search above.</li>';
     r.el.querySelector(".fw-count").textContent = entries.length || "";
     r.el.classList.toggle("on", entries.length > 0);  // red only once someone's on it
     r.el.querySelector(".fw-err").textContent = "";

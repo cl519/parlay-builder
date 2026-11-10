@@ -158,7 +158,7 @@ function playersHTML(g) {
   for (const p of g.players) {
     if (p.team !== team) {
       team = p.team;
-      html += `<div class="team-title" data-team="${esc(team)}">${logoHTML(team)}${esc(teamName(team))}${recFullSpan(team)}</div>`;
+      html += `<div class="team-title" data-team="${esc(team)}">${logoHTML(team)}${esc(teamName(team))}${recFullSpan(team)}${flagHTML("data-fwt", team)}</div>`;
     }
     const key = `${p.team}|${p.name}`;
     const rows = STATS.filter((s) => p[s].length).map((s) => {
@@ -168,7 +168,7 @@ function playersHTML(g) {
     // Name, box score (tonight's game on top while it's on), then the prop rows. The box score
     // is right there, so the name has no hover card here (it does on My bets).
     html += `<div class="player" data-log="${esc(key)}">`
-      + `<div class="name"><span>${esc(p.name)}<span class="ppos">${posHTML(logs[key])}</span></span>`
+      + `<div class="name"><span>${esc(p.name)}<span class="ppos">${posHTML(logs[key])}</span></span>${flagHTML("data-fwp", key)}`
       + `<span class="pown" data-pown="${esc(`${g.key}|${p.name}`)}">${pownText(g.key, p.name)}</span></div>`
       + `<div class="plog" data-game="${esc(g.key)}">${plogHTML(g.key, p.team, p.name)}</div>${rows}</div>`;
   }
@@ -194,16 +194,28 @@ function gameHTML(g) {
 }
 
 // ---------- Fraud Watch ----------
-// A 🚩 by every name on the list; a listed team gets one on its headers and on each of its
-// players. Classes only, so it applies at once without redrawing the board.
+// A flag after every player's name and on every team row: gray outline, or red once they're on
+// the list (a listed team's players get a dimmer red). Tap it to add or remove them. The game
+// header marks a listed team with a 🚩. Classes only, so it applies at once without redrawing.
+
+const FLAG = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 14.5V2M3.5 2.5h8.5l-2 3.2 2 3.3H3.5"/></svg>';
+const flagHTML = (attr, value) => `<button class="pflag" ${attr}="${esc(value)}">${FLAG}</button>`;
 
 export function applyFrauds() {
   document.querySelectorAll("#games .player[data-log]").forEach((el) => {
-    const [team, ...name] = el.dataset.log.split("|");
-    el.classList.toggle("fraud", fraudPlayer(name.join("|")));
-    el.classList.toggle("fraud-team", fraudTeam(team));
+    const [team, ...rest] = el.dataset.log.split("|"), name = rest.join("|");
+    const mine = fraudPlayer(name), viaTeam = fraudTeam(team);
+    el.classList.toggle("fraud", mine);
+    el.classList.toggle("fraud-team", viaTeam);
+    el.querySelector(".pflag").dataset.tip = mine ? "On Fraud Watch · tap to remove"
+      : viaTeam ? `The ${teamName(team)} are on Fraud Watch · tap to add ${name} too` : "Add to Fraud Watch";
   });
-  document.querySelectorAll("#games [data-team]").forEach((el) => el.classList.toggle("fraud", fraudTeam(el.dataset.team)));
+  document.querySelectorAll("#games [data-team]").forEach((el) => {
+    const on = fraudTeam(el.dataset.team);
+    el.classList.toggle("fraud", on);
+    const flag = el.querySelector(".pflag");
+    if (flag) flag.dataset.tip = on ? "Team on Fraud Watch · tap to remove" : `Add the ${teamName(el.dataset.team)} to Fraud Watch`;
+  });
 }
 
 // ---------- Rendering ----------
