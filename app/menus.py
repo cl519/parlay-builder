@@ -22,12 +22,13 @@ SERIES = {
     "KXNBAPTS": "PTS",
     "KXNBAREB": "REB",
     "KXNBAAST": "AST",
+    "KXNBAPRA": "PRA",
     "KXNBA3PT": "3PT",
     "KXNBASTL": "STL",
     "KXNBABLK": "BLK",
     "KXNBASTOCK": "STL+BLK",
 }
-STATS = ["PTS", "REB", "AST", "3PT", "STL", "BLK", "STL+BLK"]
+STATS = ["PTS", "REB", "AST", "PRA", "3PT", "STL", "BLK", "STL+BLK"]
 
 CACHE_SECONDS = 20
 MILESTONE_TTL = 120

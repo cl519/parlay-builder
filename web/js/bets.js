@@ -7,6 +7,7 @@
 // "Cards on the page" below.
 
 import { getJSON } from "./api.js";
+import { setExposure } from "./exposure.js";
 import { refreshBoard } from "./board.js";
 import { esc, foulsHTML, percent, tipTime, usd } from "./format.js";
 import { chipState, liveGame, playerOut, playerStats, statValue } from "./markets.js";
@@ -725,6 +726,13 @@ function useInSlip(p) {
 }
 
 let loadedAt = 0;
+let loaded = () => {};
+
+/** Run `fn` after every load of your parlays (Build redraws its "already in N parlays" badges). */
+export function onBetsLoaded(fn) { loaded = fn; }
+
+/** Fetch your parlays now, e.g. right after placing one from Build. */
+export const reloadBets = () => load(true);
 
 /** Fetch your parlays. `relayout`: lay out fresh if you haven't scrolled yet (just opened the tab). */
 async function load(force = false, relayout = false) {
@@ -738,6 +746,8 @@ async function load(force = false, relayout = false) {
   byTicker = new Map(data.parlays.map((p) => [p.ticker, p]));
   for (const p of data.parlays) known[p.ticker] = p;
   $("betCount").textContent = data.parlays.length || "";
+  setExposure(data.parlays, lost);
+  loaded();
   // Forget edits for parlays that no longer exist
   for (const edits of [dropped, adjusted, editing, adding]) {
     for (const t of Object.keys(edits)) if (!byTicker.has(t)) delete edits[t];
@@ -895,6 +905,6 @@ export function installBets() {
     if (columns && cols && document.body.dataset.view === "bets" && columnCount(cols.clientWidth) !== columns) layout();
   }).observe($("bets"));
   load();  // fills the tab count right away
-  setInterval(() => { if (document.body.dataset.view === "bets" && !document.hidden) load(); }, POLL_MS);
+  setInterval(() => { if (!document.hidden) load(); }, POLL_MS);  // on Build too: its badges count your parlays
   setInterval(reorderLegs, REORDER_MS);
 }

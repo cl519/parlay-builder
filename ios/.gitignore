@@ -1,0 +1,4 @@
+# Your Mac's address and the phone's token (written by ./configure from ~/.parlay/phone.json)
+Parlay/Secrets.swift
+xcuserdata/
+build/

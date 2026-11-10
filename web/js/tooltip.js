@@ -4,6 +4,7 @@
 import { getJSON } from "./api.js";
 import { esc, espnAbbr, headshotHTML, logoHTML, period, teamName } from "./format.js";
 import { liveGame, playerStats } from "./markets.js";
+import { lineExposure } from "./exposure.js";
 import { state } from "./state.js";
 
 const LEGEND_TEXT = '<div class="tt">Thin market</div>Few trades on this line, so the bid and ask are 10¢+ apart '
@@ -55,6 +56,8 @@ function chipHTML(chip) {
     + row("Bid", hasBid ? `${bid}¢` : "none")
     + (hasAsk && hasBid ? row("Midpoint", `~${Math.round((bid + ask) / 2)}¢`) : "")
     + "</div>";
+  const own = lineExposure(chip.dataset.t);
+  if (own) html += `<div class="own-tip">In ${own.n} open ${own.n === 1 ? "parlay" : "parlays"}</div>`;
   if (chip.classList.contains("thin")) {
     html += `<div class="warn">Thin market: ${ask - bid}¢ gap, so the ask overstates the price. `
       + "Your parlay's live price is set by makers, not this number.</div>";

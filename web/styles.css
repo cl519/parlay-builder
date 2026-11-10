@@ -72,6 +72,10 @@ header {
   max-width: 1280px; margin: 0 auto; padding: 16px;
 }
 @media (max-width: 960px) { .layout { grid-template-columns: minmax(0, 1fr); padding-bottom: 120px; } }
+/* Build on wide windows: Fraud Watch | games | slip */
+@media (min-width: 1240px) {
+  body[data-view="build"] .layout { grid-template-columns: 260px minmax(0, 1fr) 340px; max-width: 1610px; }
+}
 .loading { padding: 60px; text-align: center; color: var(--muted); }
 .empty { color: var(--muted); padding: 18px 14px; font-size: 13px; }
 .note { font-size: 12px; color: var(--muted); }
@@ -118,6 +122,10 @@ header {
 }
 .team-title { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--muted); padding: 12px 16px 10px; }
 .team-title .logo { width: 18px; height: 18px; }
+.game-head h2 .rec { color: var(--muted); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.team-title .rec { font-weight: 500; margin-left: 4px; font-variant-numeric: tabular-nums; }
+.team-title .rec .up { color: var(--accent); }
+.team-title .rec .down { color: var(--danger); }
 
 .row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
 .row .lbl { width: 54px; flex: none; color: var(--muted); font-size: 11px; font-weight: 700; }
@@ -159,6 +167,8 @@ header {
 .chips {
   display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin;
   scrollbar-color: var(--line) transparent; padding-bottom: 4px;
+  /* room for the "in N parlays" badge to sit over a chip's corner without being cut off */
+  padding-top: 7px; margin-top: -7px; padding-right: 7px;
 }
 .chip {
   flex: none; min-width: 58px; padding: 6px 8px; border-radius: var(--radius);
@@ -184,6 +194,17 @@ header {
 .chips.ml .chip { min-width: 120px; flex-direction: row; justify-content: space-between; gap: 12px; padding: 9px 12px; }
 
 .chip.on { background: var(--accent); color: var(--accent-ink); }
+
+/* Already in N of your open parlays: a badge on the corner, only when N > 0 */
+.chip .own {
+  position: absolute; top: -6px; right: -6px; min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 999px; background: #388bfd; color: #fff; font-size: 10px; font-weight: 700;
+  line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; box-shadow: 0 0 0 2px var(--panel);
+}
+.chip .own:empty { display: none; }
+.pown { color: #58a6ff; font-size: 12px; font-weight: 600; }
+.pown:empty { display: none; }
+.tooltip .own-tip { color: #58a6ff; margin-top: 6px; }
 .chip.on .px { color: var(--accent-ink); }
 
 /* Thin market: small dot after the price (and in the header legend) */
@@ -559,3 +580,66 @@ html:has(body[data-view="bets"]), body[data-view="bets"] { overflow-anchor: none
 .fcount { margin-left: auto; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .fclear { color: var(--text); font-size: 12px; font-weight: 600; }
 .fclear:hover { text-decoration: underline; }
+
+/* ---------- Fraud Watch ---------- */
+/* Left of the games on wide windows (sticky, like the slip); a strip in the header otherwise.
+   Gray like the slip while empty; tinted red (the fraud region) once anyone is on it. */
+:root { --fraud: 248, 81, 73; }
+.fw-rail {
+  position: sticky; top: 108px; align-self: start; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 14px; padding: 12px 12px 8px;
+}
+.fw-strip { display: flex; align-items: center; gap: 8px; margin: 0 16px 10px; padding: 6px 8px; border-radius: 10px;
+  background: var(--panel); border: 1px solid var(--line); }
+.fw { transition: background-color .3s, border-color .3s; }
+.fw.on { background: rgba(var(--fraud), .07); border-color: rgba(var(--fraud), .28); }
+@media (max-width: 1239px) { .fw-rail { display: none !important; } }
+@media (min-width: 1240px) { .fw-strip { display: none !important; } }
+/* The strip makes the header taller: keep the slip and jump links clear of it */
+@media (min-width: 961px) and (max-width: 1239px) {
+  body[data-view="build"] .slip { top: 158px; max-height: calc(100vh - 174px); }
+  body[data-view="build"] .game { scroll-margin-top: 150px; }
+}
+.fw-head { font-size: 13px; font-weight: 700; color: var(--muted); white-space: nowrap; transition: color .3s; }
+.fw.on .fw-head { color: #ff7b72; }
+.fw-count { color: var(--muted); font-weight: 600; margin-left: 2px; }
+.fw-search { position: relative; }
+.fw-rail .fw-search { margin: 10px 0 8px; }
+.fw-search input {
+  width: 100%; background: var(--bg); border: 1px solid var(--line); color: var(--text);
+  border-radius: 8px; padding: 6px 9px; font: inherit; font-size: 13px;
+}
+.fw-search input:focus { outline: none; border-color: var(--muted); }
+.fw.on .fw-search input:focus { border-color: rgba(var(--fraud), .7); }
+.fw-strip .fw-search input { width: 190px; }
+.fw-menu {
+  position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; width: 100%; min-width: 200px; background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 10px; padding: 4px; box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+}
+.fw-strip .fw-menu { width: 260px; }
+.fw-opt { display: flex; align-items: center; gap: 6px; width: 100%; padding: 6px 8px; border-radius: 6px; text-align: left; font-size: 13px; }
+.fw-opt span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fw-opt.on, .fw-opt:hover { background: var(--chip-hover); }
+.fw-opt small { margin-left: auto; color: var(--muted); }
+.fw-none { color: var(--muted); font-size: 12px; padding: 8px; }
+.fw .logo { width: 16px; height: 16px; flex: none; }
+.fw-list { list-style: none; margin: 0; padding: 0; }
+/* A long list scrolls inside the panel (up and down only); the search box stays put */
+.fw-rail .fw-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; max-height: calc(100vh - 230px); overflow: hidden auto; }
+.fw-strip .fw-list { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.fw-item { display: flex; align-items: center; gap: 6px; padding: 4px 4px 4px 6px; border-radius: 8px; font-size: 13px; }
+.fw-rail .fw-item:hover { background: rgba(var(--fraud), .1); }
+.fw-strip .fw-item { flex: none; background: rgba(var(--fraud), .12); border-radius: 999px; padding: 3px 4px 3px 8px; font-size: 12px; font-weight: 600; }
+.fw-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fw-team { color: var(--muted); font-size: 11px; }
+.fw-item button { margin-left: auto; color: var(--muted); width: 20px; height: 20px; border-radius: 6px; font-size: 11px; flex: none; }
+.fw-item button:hover { color: var(--danger); background: rgba(var(--fraud), .15); }
+.fw-empty { color: var(--muted); font-size: 12px; }
+.fw-strip .fw-empty { white-space: nowrap; }
+.fw-err { color: var(--danger); font-size: 12px; }
+.fw-err:empty { display: none; }
+
+/* On the board: a 🚩 by every name on the list (a listed team's players too) */
+.player.fraud .name > span:first-child::before,
+.player.fraud-team .name > span:first-child::before,
+.tname.fraud::before, .team-title.fraud::before { content: "🚩"; margin-right: 4px; }

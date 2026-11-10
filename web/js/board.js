@@ -4,6 +4,8 @@
 import { getJSON } from "./api.js";
 import { esc, handicap, logoHTML, teamName, tipTime } from "./format.js";
 import { chipState, liveGame, statusKind } from "./markets.js";
+import { lineExposure, playerExposure } from "./exposure.js";
+import { fraudPlayer, fraudTeam } from "./frauds.js";
 import { liveRow, logTableHTML } from "./tooltip.js";
 import { STATS, allLegs, pickCount, state, visibleGames } from "./state.js";
 
@@ -16,13 +18,47 @@ function chipHTML(leg, group, label, extraClass = "") {
   const s = chipState(state.byTicker[leg.ticker], group);
   const cls = ["chip", s.on && "on", s.thin && "thin", s.hit && "hit", extraClass].filter(Boolean).join(" ");
   return `<button class="${cls}" ${s.disabled ? "disabled" : ""} data-t="${esc(leg.ticker)}" data-g="${esc(group)}">`
-    + `<span class="ln">${esc(label)}</span><span class="px">${s.price}</span></button>`;
+    + `<span class="ln">${esc(label)}</span><span class="px">${s.price}</span><span class="own">${ownText(leg.ticker)}</span></button>`;
 }
+
+// ---------- Already in your parlays ----------
+// A small blue badge on a chip's corner: how many open parlays have that exact line. Beside a
+// player's name: how many have any of their lines (15+ and 20+ PTS are really the same bet).
+
+const ownText = (ticker) => String(lineExposure(ticker)?.n || "");
+const pownText = (game, name) => {
+  const n = playerExposure(game, name);
+  return n ? `in ${n} ${n === 1 ? "parlay" : "parlays"}` : "";
+};
 
 function chipRow(label, rowKey, chips, extraClass = "") {
   return `<div class="row"><span class="lbl">${esc(label)}</span>`
     + `<div class="chips ${extraClass}" data-k="${esc(rowKey)}">${chips}</div></div>`;
 }
+
+// ---------- Team records ----------
+// Beside each team name: its record ("5-4"); above its players, also seed, streak and (once
+// they've played more than 10) last 10. Filled in when the standings arrive.
+
+const ord = (n) => n + ({ 1: "st", 2: "nd", 3: "rd" }[n % 100 > 10 && n % 100 < 14 ? 0 : n % 10] || "th");
+
+function recordHTML(team) {
+  const r = state.records[team];
+  return r?.record ? esc(r.record) : "";
+}
+
+function recordFullHTML(team) {
+  const r = state.records[team];
+  if (!r?.record) return "";
+  const played = r.record.split("-").reduce((a, b) => a + Number(b), 0);
+  const streak = r.streak ? `<span class="${r.streak[0] === "W" ? "up" : "down"}">${esc(r.streak)}</span>` : "";
+  return [esc(r.record), r.seed && `${ord(r.seed)} ${esc(r.conf)}`, played > 10 && r.last10 && `${esc(r.last10)} last 10`, streak]
+    .filter(Boolean).join(" · ");
+}
+
+const teamSpan = (team) => `<span class="tname" data-team="${esc(team)}">${esc(teamName(team))}</span>`;
+const recSpan = (team) => `<span class="rec" data-rec="${esc(team)}">${recordHTML(team)}</span>`;
+const recFullSpan = (team) => `<span class="rec" data-recfull="${esc(team)}">${recordFullHTML(team)}</span>`;
 
 // ---------- Your hit rate on each prop line ----------
 // Under every player prop chip: how often that line hit on nights you bet it this season
@@ -122,7 +158,7 @@ function playersHTML(g) {
   for (const p of g.players) {
     if (p.team !== team) {
       team = p.team;
-      html += `<div class="team-title">${logoHTML(team)}${esc(teamName(team))}</div>`;
+      html += `<div class="team-title" data-team="${esc(team)}">${logoHTML(team)}${esc(teamName(team))}${recFullSpan(team)}</div>`;
     }
     const key = `${p.team}|${p.name}`;
     const rows = STATS.filter((s) => p[s].length).map((s) => {
@@ -132,7 +168,8 @@ function playersHTML(g) {
     // Name, box score (tonight's game on top while it's on), then the prop rows. The box score
     // is right there, so the name has no hover card here (it does on My bets).
     html += `<div class="player" data-log="${esc(key)}">`
-      + `<div class="name"><span>${esc(p.name)}<span class="ppos">${posHTML(logs[key])}</span></span></div>`
+      + `<div class="name"><span>${esc(p.name)}<span class="ppos">${posHTML(logs[key])}</span></span>`
+      + `<span class="pown" data-pown="${esc(`${g.key}|${p.name}`)}">${pownText(g.key, p.name)}</span></div>`
       + `<div class="plog" data-game="${esc(g.key)}">${plogHTML(g.key, p.team, p.name)}</div>${rows}</div>`;
   }
   return html || '<div class="empty">No player props listed</div>';
@@ -143,7 +180,7 @@ function gameHTML(g) {
   return `
     <section class="game" id="g-${esc(g.key)}">
       <div class="game-head">
-        <h2>${logoHTML(g.away)}${esc(teamName(g.away))} <span class="at">@</span> ${logoHTML(g.home)}${esc(teamName(g.home))}</h2>
+        <h2>${logoHTML(g.away)}${teamSpan(g.away)}${recSpan(g.away)} <span class="at">@</span> ${logoHTML(g.home)}${teamSpan(g.home)}${recSpan(g.home)}</h2>
         <span class="tipoff">${g.start ? "Tip " + tipTime(g) : ""}</span>
         <span class="headlive" data-hk="${esc(g.key)}">${headLiveHTML(g)}</span>
         <span class="count">${n ? n + " picked" : ""}</span>
@@ -154,6 +191,19 @@ function gameHTML(g) {
       <div class="section"><div class="section-title">Game total</div>${totalsHTML(g)}</div>
       <div class="section flush">${playersHTML(g)}</div>
     </section>`;
+}
+
+// ---------- Fraud Watch ----------
+// A 🚩 by every name on the list; a listed team gets one on its headers and on each of its
+// players. Classes only, so it applies at once without redrawing the board.
+
+export function applyFrauds() {
+  document.querySelectorAll("#games .player[data-log]").forEach((el) => {
+    const [team, ...name] = el.dataset.log.split("|");
+    el.classList.toggle("fraud", fraudPlayer(name.join("|")));
+    el.classList.toggle("fraud-team", fraudTeam(team));
+  });
+  document.querySelectorAll("#games [data-team]").forEach((el) => el.classList.toggle("fraud", fraudTeam(el.dataset.team)));
 }
 
 // ---------- Rendering ----------
@@ -184,6 +234,7 @@ export function renderBoard() {
     else if (el.classList.contains("spread")) centerSpread(el);
   });
   renderedSig = structureSig();
+  applyFrauds();
   loader.disconnect();
   document.querySelectorAll(".player[data-log]").forEach((el) => logs[el.dataset.log] || loader.observe(el));
 }
@@ -203,6 +254,13 @@ function patchBoard() {
     el.classList.toggle("on", s.on);
     el.classList.toggle("thin", s.thin);
     el.classList.toggle("hit", s.hit);
+    const own = el.querySelector(".own");
+    if (own.textContent !== ownText(el.dataset.t)) own.textContent = ownText(el.dataset.t);
+  });
+  document.querySelectorAll("#games [data-pown]").forEach((el) => {
+    const [game, ...name] = el.dataset.pown.split("|");
+    const text = pownText(game, name.join("|"));
+    if (el.textContent !== text) el.textContent = text;
   });
   document.querySelectorAll("#games .hr[data-h]").forEach((el) => {
     const fresh = document.createElement("template");
@@ -213,6 +271,8 @@ function patchBoard() {
     const plog = el.querySelector(".plog");
     if (logs[el.dataset.log]) setHTML(plog, plogHTML(plog.dataset.game, ...el.dataset.log.split("|")));
   });
+  document.querySelectorAll("#games [data-rec]").forEach((el) => setHTML(el, recordHTML(el.dataset.rec)));
+  document.querySelectorAll("#games [data-recfull]").forEach((el) => setHTML(el, recordFullHTML(el.dataset.recfull)));
   document.querySelectorAll("#games [data-hk]").forEach((el) => {
     const g = state.games.find((x) => x.key === el.dataset.hk);
     if (g) setHTML(el, headLiveHTML(g));

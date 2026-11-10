@@ -1,0 +1,15 @@
+#!/bin/zsh
+# Point the app at your Mac: writes Parlay/Secrets.swift from ~/.parlay/phone.json (run ./parlay phone first).
+set -e
+DIR="${0:A:h}"
+PHONE="${PARLAY_HOME:-$HOME/.parlay}/phone.json"
+[[ -f "$PHONE" ]] || { echo "No phone access yet. Run: ./parlay phone"; exit 1; }
+/usr/bin/python3 - "$PHONE" "$DIR/Parlay/Secrets.swift" <<'PY'
+import json, sys
+c = json.load(open(sys.argv[1]))
+with open(sys.argv[2], "w") as f:
+    f.write("// Written by ios/configure. Not in git: it holds your phone's token.\n")
+    f.write(f'nonisolated enum Secrets {{\n    static let server = "http://{c["host"]}:8787"\n    static let token = "{c["token"]}"\n}}\n')
+PY
+chmod 600 "$DIR/Parlay/Secrets.swift"
+echo "App configured for your Mac at $(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["host"])' "$PHONE")."

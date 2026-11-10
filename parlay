@@ -5,6 +5,7 @@
 #   ./parlay stop     stop the server
 #   ./parlay log      recent server output
 #   ./parlay update   get the latest version (git pull), then restart
+#   ./parlay phone    let your iPhone app read your bets over Tailscale (read-only)
 set -e
 DIR="${0:A:h}"
 VENV="$DIR/.venv"
@@ -12,6 +13,7 @@ PORT="${PARLAY_PORT:-8787}"
 URL="http://127.0.0.1:$PORT"
 LOG="$DIR/server.log"
 CONFIG="${PARLAY_HOME:-$HOME/.parlay}/config.json"
+PHONE="${PARLAY_HOME:-$HOME/.parlay}/phone.json"
 
 install() {
   if ! /usr/bin/python3 -c 'import sys; sys.exit(sys.version_info < (3, 9))' 2>/dev/null; then
@@ -44,9 +46,13 @@ case "$1" in
     install
     stop
     exec "$0" ;;
+  phone)
+    "$VENV/bin/python" "$DIR/app/phone.py"
+    stop
+    exec "$0" ;;
   "") ;;
   *)
-    echo "Usage: ./parlay [setup|stop|log|update]"; exit 1 ;;
+    echo "Usage: ./parlay [setup|stop|log|update|phone]"; exit 1 ;;
 esac
 
 if [[ ! -x "$VENV/bin/python" || ! -f "$CONFIG" ]]; then
@@ -56,6 +62,9 @@ fi
 
 if ! curl -s -o /dev/null "$URL"; then
   nohup "$VENV/bin/python" "$DIR/app/server.py" > "$LOG" 2>&1 &
+  SERVER=$!
+  # With phone access on, keep the Mac awake while the server runs (only works on the charger)
+  if [[ -f "$PHONE" ]]; then nohup caffeinate -s -w $SERVER > /dev/null 2>&1 & fi
   for i in {1..30}; do
     curl -s -o /dev/null "$URL" && break
     sleep 0.5

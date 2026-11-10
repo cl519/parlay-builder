@@ -5,7 +5,7 @@
 
 import { dayOf } from "./format.js";
 
-export const STATS = ["PTS", "REB", "AST", "3PT", "STL", "BLK", "STL+BLK"];
+export const STATS = ["PTS", "REB", "AST", "PRA", "3PT", "STL", "BLK", "STL+BLK"];
 const STORAGE_KEY = "picks";
 
 export const state = {
@@ -16,6 +16,7 @@ export const state = {
   day: null,          // "26OCT21"
   live: { games: {} }, // /api/live: scores + box scores keyed by Kalshi player name
   hits: {},           // /api/history: "Player|PTS|15" -> [hits, nights] on your own bets this season
+  records: {},        // /api/standings: team -> {record, last10, streak, seed, conf}
 };
 
 function readPicks() {

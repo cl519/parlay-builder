@@ -8,10 +8,13 @@ GET  /static/...      page assets from web/
 GET  /api/games       per-game menus from Kalshi's public market data
 GET  /api/live        live scores + player box scores (ESPN), keyed by Kalshi player name
 GET  /api/player      ?team=PHI&name=...: last 5 games + season averages (ESPN), for the hover card
+GET  /api/standings   every team's record, last 10, streak and seed (ESPN), for the board
 GET  /api/headshot    ?team=PHI&name=...: redirects to the player's ESPN photo (404 if none)
 GET  /api/balance     cash you can spend on parlays (private: needs the token)
 GET  /api/bets        your open parlays with per-leg chances (private: needs the token)
+GET  /api/frauds    your Fraud Watch list (private: needs the token)
 GET  /api/history     your hit rate on each prop line this season, for Build (private: needs the token)
+POST /api/frauds    replace the Fraud Watch list (saved in ~/.parlay/frauds.json)
 POST /api/move-funds  move all cash onto the parlay shard (stays in your account)
 POST /api/preview     live price for the slip (1 leg: order book; 2+: RFQ cancelled at once), no money moves
 POST /api/prepare     REAL MONEY step 1: fix the price for the confirm popup (holds a parlay quote)
@@ -22,7 +25,8 @@ POST /api/cashout     REAL MONEY: sell it at exactly that offer, or nothing
 
 Every POST needs this run's token (only our page has it), a localhost Host header
 (blocks DNS rebinding) and, when sent, a localhost Origin (blocks other websites).
-The server only listens on 127.0.0.1.
+The server only listens on 127.0.0.1, plus, after ./parlay phone, a read-only listener on your
+Mac's Tailscale address for the iPhone app (see phone.py).
 """
 
 import hmac
@@ -34,12 +38,15 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
 import betting
+import frauds
 import history
+import phone
 from bets import bets_payload
 from config import PORT
 from live_stats import live_payload
 from menus import games_payload
 from player_log import headshot_url, player_payload
+from standings import standings_payload
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WEB = os.path.realpath(os.path.join(HERE, "..", "web"))
@@ -64,6 +71,7 @@ POST_ROUTES = {
     "/api/prepare": lambda b: betting.prepare_bet(*_legs_and_stake(b)),
     "/api/place": lambda b: betting.place_bet(b.get("bet_id", "")),
     "/api/cancel": lambda b: betting.cancel_bet(b.get("bet_id", "")),
+    "/api/frauds": frauds.save,
     "/api/move-funds": lambda b: betting.move_funds_to_combo_shard(),
     "/api/cashout-quote": lambda b: betting.cashout_quote(b.get("ticker", "")),
     "/api/cashout": lambda b: betting.cash_out(b.get("bet_id", "")),
@@ -117,11 +125,16 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, f.read().replace(b"__TOKEN__", TOKEN.encode()), "text/html; charset=utf-8")
         if path.startswith("/static/"):
             return self._static(path[len("/static/"):])
+        self._api(path)
+
+    def _api(self, path):
         try:
             if path == "/api/games":
                 return self._send(200, games_payload(force="refresh" in self.path))
             if path == "/api/live":
                 return self._send(200, live_payload())
+            if path == "/api/standings":
+                return self._send(200, standings_payload())
             if path in ("/api/player", "/api/headshot"):
                 q = parse_qs(urlsplit(self.path).query)
                 team, name = q.get("team", [""])[0], q.get("name", [""])[0]
@@ -136,6 +149,10 @@ class Handler(BaseHTTPRequestHandler):
                 if not self._trusted():
                     return self._send(403, {"error": "forbidden"})
                 return self._send(200, bets_payload(force="refresh" in self.path))
+            if path == "/api/frauds":
+                if not self._trusted():
+                    return self._send(403, {"error": "forbidden"})
+                return self._send(200, frauds.load())
             if path == "/api/history":
                 if not self._trusted():
                     return self._send(403, {"error": "forbidden"})
@@ -160,6 +177,31 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(502, {"error": str(e)})
 
 
+class PhoneHandler(Handler):
+    """The iPhone app, over Tailscale: GET only, a fixed list of reads, and the phone's own token."""
+
+    token = ""
+
+    def _trusted(self):
+        return hmac.compare_digest(self.headers.get("Authorization", ""), f"Bearer {self.token}")
+
+    def do_GET(self):
+        path = self.path.split("?", 1)[0]
+        if not self._trusted() or path not in phone.ROUTES:
+            return self._send(403, {"error": "forbidden"})
+        self._api(path)
+
+    def do_POST(self):
+        self._send(405, {"error": "read-only"})
+
+
+def serve_phone(host):
+    PhoneHandler.token = phone.load()["token"]
+    server = ThreadingHTTPServer((host, PORT), PhoneHandler)
+    print(f"Phone access on http://{host}:{PORT} (read-only)", flush=True)
+    server.serve_forever()
+
+
 if __name__ == "__main__":
     mimetypes.add_type("text/javascript", ".js")
     try:
@@ -167,5 +209,6 @@ if __name__ == "__main__":
     except Exception as e:  # no config yet, or a key file that can't be read
         raise SystemExit(f"Can't load your Kalshi API key: {e}")
     history.start()
+    phone.start(serve_phone)
     print(f"Parlay builder on http://127.0.0.1:{PORT}")
     ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()

@@ -24,7 +24,9 @@ export function playerOut(gameKey, name) {
 }
 
 export function statValue(stats, stat) {
-  return stat === "STL+BLK" ? stats.STL + stats.BLK : stats[BOX_KEY[stat]];
+  if (stat === "STL+BLK") return stats.STL + stats.BLK;
+  if (stat === "PRA") return stats.PTS + stats.REB + stats.AST;
+  return stats[BOX_KEY[stat]];
 }
 
 /** Live stat for a prop leg, or null if not playing yet. */

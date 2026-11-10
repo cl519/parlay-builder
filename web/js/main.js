@@ -1,11 +1,12 @@
 // Wiring: data loading, polling and user events. Rendering lives in board.js / slip.js.
 
 import { getJSON } from "./api.js";
-import { renderBoard, refreshBoard, renderDays, syncGroup } from "./board.js";
+import { applyFrauds, renderBoard, refreshBoard, renderDays, syncGroup } from "./board.js";
 import { dayLabel, esc } from "./format.js";
+import { loadFrauds, mountFrauds } from "./frauds.js";
 import { startPlaceBet } from "./place.js";
 import { installBalance } from "./balance.js";
-import { installBets, refreshBetsProgress, showBets } from "./bets.js";
+import { installBets, onBetsLoaded, refreshBetsProgress, reloadBets, showBets } from "./bets.js";
 import { note, renderSlip, stake } from "./slip.js";
 import {
   clearPicks, days, onPicksChangedElsewhere, pickedLegs, removePick, setDay, setLive, setMenus, state, togglePick,
@@ -16,6 +17,7 @@ const $ = (id) => document.getElementById(id);
 const MENU_POLL_MS = 30000;
 const LIVE_POLL_MS = 20000;
 const HISTORY_POLL_MS = 60000;  // the server syncs every 5 minutes; this just picks it up
+const STANDINGS_POLL_MS = 10 * 60000;  // the server caches 10 minutes too
 
 let liveSig = "";
 
@@ -53,6 +55,15 @@ async function loadHits() {
     state.hits = data.rates;
     if (state.games.length) refreshBoard();
   } catch { /* hit rates are a nice-to-have; keep the last ones */ }
+}
+
+async function loadStandings() {
+  try {
+    const data = await getJSON("/api/standings");
+    if (JSON.stringify(data.teams) === JSON.stringify(state.records)) return;
+    state.records = data.teams;
+    if (state.games.length) refreshBoard();
+  } catch { /* records are a nice-to-have; keep the last ones */ }
 }
 
 /** Picks changed wholesale (cleared, placed, another tab): patch every button, redraw the slip. */
@@ -106,17 +117,22 @@ $("stake").addEventListener("input", renderSlip);
 $("refresh").addEventListener("click", () => loadMenus(true));
 $("clearBtn").addEventListener("click", () => { clearPicks(); refreshAll(); note("Slip cleared."); });
 $("placeBtn").addEventListener("click", () =>
-  startPlaceBet(pickedLegs(), stake(), () => { clearPicks(); refreshAll(); }, { canKeep: true }));
+  startPlaceBet(pickedLegs(), stake(), () => { clearPicks(); refreshAll(); reloadBets(); }, { canKeep: true }));
 window.addEventListener("hashchange", applyView);
 onPicksChangedElsewhere(refreshAll);
 installTooltips();
 installBets();
+onBetsLoaded(() => { if (state.games.length) refreshBoard(); });
 installBalance();
+for (const id of ["frauds", "fraudStrip"]) mountFrauds($(id), { games: () => state.games, onChange: applyFrauds });
 
 applyView();
 loadMenus();
 loadLive();
 loadHits();
+loadStandings();
+loadFrauds();
 setInterval(loadMenus, MENU_POLL_MS);
 setInterval(loadLive, LIVE_POLL_MS);
 setInterval(loadHits, HISTORY_POLL_MS);
+setInterval(loadStandings, STANDINGS_POLL_MS);

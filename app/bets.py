@@ -36,7 +36,7 @@ def _markets(tickers):
 
 
 THIN = 0.10  # bid-ask gap at which the midpoint stops meaning anything (same as the board's thin dot)
-LINE_KINDS = {"PTS", "REB", "AST", "3PT", "STL", "BLK", "STL+BLK", "total", "spread"}
+LINE_KINDS = {"PTS", "REB", "AST", "PRA", "3PT", "STL", "BLK", "STL+BLK", "total", "spread"}
 
 
 def leg_chance(market, side):
